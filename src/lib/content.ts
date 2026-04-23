@@ -98,7 +98,7 @@ const fallback: SiteContent = {
     footer_pitch:
       "Stalled revenue, leaky funnels, stretched leadership. Whatever is holding you back, let's solve it.",
     footer_wordmark: 'synergy',
-    footer_email: 'Hello@synergypm.com',
+    footer_email: 'Hello@synergypm.ae',
     logo_url: null,
     favicon_url: null,
   },

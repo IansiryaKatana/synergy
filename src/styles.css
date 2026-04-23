@@ -277,7 +277,7 @@ a {
   gap: 1.35rem;
   width: fit-content;
   background: rgba(255, 255, 255, 0.93);
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 1rem 1rem 1rem 0.75rem;
   backdrop-filter: blur(10px) saturate(120%);
   -webkit-backdrop-filter: blur(10px) saturate(120%);
@@ -350,7 +350,7 @@ a {
 .brand-icon {
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: var(--brand-blue);
@@ -396,7 +396,7 @@ a {
 .menu a {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.32rem 1rem;
   transition: color 0.2s ease, background-color 0.2s ease;
 }
@@ -496,7 +496,7 @@ a {
 .menu-toggle {
   display: none;
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(17, 90, 166, 0.12);
   color: var(--ink);
   padding: 0.45rem 0.78rem;
@@ -521,7 +521,7 @@ a {
 
 .call-btn {
   border: 0;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.62rem 1.1rem;
   color: var(--white);
   background: var(--brand-blue);
@@ -536,7 +536,7 @@ a {
 .call-btn-icon {
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: rgba(246, 247, 248, 0.18);
@@ -614,9 +614,9 @@ a {
 
 .services-hub-inline-nav a {
   color: rgba(247, 248, 250, 0.92);
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.34rem 0.7rem;
-  font-size: 0.85rem;
+  font-size: 1.125rem;
   font-weight: 500;
 }
 
@@ -660,11 +660,13 @@ a {
 }
 
 .services-hub-nav-arrow {
-  width: 34px;
+  width: 38px;
   height: 34px;
-  border-radius: 999px;
-  border: 1px solid rgba(17, 31, 47, 0.2);
-  background: #ffffff;
+  border: 0;
+  outline: 0;
+  border-radius: 10px;
+  padding: 0.35rem;
+  background: rgba(17, 90, 166, 0.16);
   color: #115aa6;
   display: grid;
   place-items: center;
@@ -790,7 +792,7 @@ a {
   right: 0.7rem;
   width: 42px;
   height: 42px;
-  border-radius: 999px;
+  border-radius: 12px;
   border: 1px solid rgba(247, 248, 250, 0.42);
   background: rgba(8, 17, 28, 0.46);
   color: #ffffff;
@@ -931,6 +933,42 @@ a {
   color: rgba(36, 42, 51, 0.72);
   font-size: 0.86rem;
   line-height: 1.35;
+}
+
+.about-services-nav-arrows {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-left: auto;
+}
+
+.about-services-nav-arrow {
+  width: 38px;
+  height: 34px;
+  border: 0;
+  outline: 0;
+  border-radius: 10px;
+  padding: 0.35rem;
+  background: rgba(17, 90, 166, 0.16);
+  color: #115aa6;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.about-services-nav-arrow:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.about-services-nav-arrow svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .about-services-cards-viewport {
@@ -1104,11 +1142,13 @@ a {
 }
 
 .about-team-nav-arrow {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: 1px solid rgba(17, 31, 47, 0.2);
-  background: #ffffff;
+  width: 38px;
+  height: 34px;
+  border: 0;
+  outline: 0;
+  border-radius: 10px;
+  padding: 0.35rem;
+  background: rgba(17, 90, 166, 0.16);
   color: #115aa6;
   display: grid;
   place-items: center;
@@ -1236,7 +1276,7 @@ a {
 .about-team-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: 12px;
   border: none;
   background: rgba(17, 90, 166, 0.32);
   cursor: pointer;
@@ -1369,6 +1409,8 @@ a {
   color: #ffffff;
   padding: 0.58rem 0.68rem;
   font-family: 'Inter Tight', sans-serif;
+  font-size: clamp(1.05rem, 1.45vw, 1.28rem);
+  line-height: 1.28;
   outline: none;
   box-shadow: none;
 }
@@ -1405,6 +1447,7 @@ a {
   background: rgba(6, 14, 24, 0.35) !important;
   color: #ffffff !important;
   font-family: 'Inter Tight', sans-serif !important;
+  font-size: clamp(1.05rem, 1.45vw, 1.28rem) !important;
   padding-left: 84px !important;
   outline: none !important;
   box-shadow: none !important;
@@ -1431,6 +1474,7 @@ a {
 .contact-page-form textarea {
   resize: vertical;
   border: 1px solid rgba(247, 248, 250, 0.4);
+  min-height: 170px;
 }
 
 .contact-page-form input::placeholder,
@@ -1471,13 +1515,18 @@ a {
 .contact-page-form-submit {
   margin-top: 0.3rem;
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.62rem 1rem;
   background: #115aa6;
   color: #ffffff;
   font-family: 'Inter Tight', sans-serif;
   font-weight: 600;
   cursor: pointer;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
 }
 
 .projects-page-shell {
@@ -1723,7 +1772,7 @@ a {
 }
 
 .services-page-links a {
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(247, 248, 250, 0.18);
   padding: 0.48rem 0.85rem;
 }
@@ -1906,7 +1955,7 @@ a {
 .mobile-menu-call {
   width: 100%;
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.76rem 1rem;
   background: #1f1f1f;
   color: #f7f8fa;
@@ -1954,19 +2003,26 @@ h1 {
 
 .primary {
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.72rem 1.2rem;
   font-family: 'Inter Tight', sans-serif;
   font-weight: 600;
   color: var(--brand-blue);
   background: var(--sand);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .about-page-hero-content .primary {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
+}
+
+.home-hero-primary {
+  color: #111f2f;
 }
 
 .about-primary-icon {
@@ -2241,16 +2297,18 @@ h1 {
 }
 
 .section-nav-arrow {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: 1px solid rgba(247, 248, 250, 0.4);
-  background: rgba(247, 248, 250, 0.18);
-  color: #f7f8fa;
+  width: 38px;
+  height: 34px;
+  border: 0;
+  outline: 0;
+  border-radius: 10px;
+  padding: 0.35rem;
+  background: rgba(17, 90, 166, 0.16);
+  color: #115aa6;
   display: grid;
   place-items: center;
   cursor: pointer;
-  transition: background-color 0.2s ease, opacity 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
 .section-nav-arrow svg {
@@ -2264,13 +2322,12 @@ h1 {
 }
 
 .section-nav-arrow:disabled {
-  opacity: 0.42;
-  cursor: default;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .section-nav-arrow:not(:disabled):hover {
-  background: rgba(247, 248, 250, 0.94);
-  color: #115aa6;
+  background: rgba(17, 90, 166, 0.22);
 }
 
 .services-showcase-track {
@@ -2309,14 +2366,12 @@ h1 {
 }
 
 .services-showcase-header .section-nav-arrow {
-  background: #ffffff;
+  background: rgba(17, 90, 166, 0.16);
   color: #115aa6;
-  border: 1px solid rgba(17, 90, 166, 0.22);
 }
 
 .services-showcase-header .section-nav-arrow:not(:disabled):hover {
-  background: #eef5ff;
-  color: #115aa6;
+  background: rgba(17, 90, 166, 0.22);
 }
 
 .services-showcase-header .section-nav-arrow:focus,
@@ -2386,7 +2441,7 @@ h1 {
   width: 18px;
   height: 4px;
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(247, 248, 250, 0.36);
 }
 
@@ -2442,7 +2497,7 @@ h1 {
   width: 34px;
   height: 34px;
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   display: inline-grid;
   place-items: center;
   background: var(--brand-blue);
@@ -2584,7 +2639,7 @@ h1 {
 .service-card-icon-link {
   width: 48px;
   height: 48px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: inline-grid;
   place-items: center;
   color: #0f3f67;
@@ -2718,7 +2773,7 @@ h1 {
   justify-content: space-between;
   gap: 1rem;
   cursor: pointer;
-  border-radius: 999px;
+  border-radius: 12px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -2747,7 +2802,7 @@ h1 {
 }
 
 .member-row-highlight {
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(247, 248, 250, 0.94);
   color: #0f2540;
 }
@@ -2764,7 +2819,7 @@ h1 {
   flex: 0 0 58px;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   font-size: 0.72rem;
@@ -2808,7 +2863,7 @@ h1 {
 .member-tail button {
   width: 34px;
   height: 34px;
-  border-radius: 999px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
   font-weight: 400;
@@ -2870,7 +2925,7 @@ h1 {
 .member-dialog-media span {
   width: 84px;
   height: 84px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -2901,7 +2956,7 @@ h1 {
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(17, 90, 166, 0.1);
   font-size: 1.15rem;
   line-height: 1;
@@ -2950,7 +3005,7 @@ h1 {
 .member-socials > span {
   width: 36px;
   height: 36px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: rgba(17, 90, 166, 0.1);
@@ -3066,7 +3121,7 @@ h1 {
   margin-top: auto;
   align-self: flex-start;
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--brand-blue);
   color: #f6f7f8;
   font-family: 'Inter Tight', sans-serif;
@@ -3081,7 +3136,7 @@ h1 {
 .insights-view-all span {
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: rgba(246, 247, 248, 0.18);
@@ -3194,7 +3249,7 @@ h1 {
 .insight-chip {
   margin: 0;
   width: fit-content;
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(248, 250, 252, 0.92);
   color: #12253a;
   font-size: 0.72rem;
@@ -3231,7 +3286,7 @@ h1 {
 .insight-location-badge {
   margin: auto 0 0.55rem;
   width: fit-content;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.32rem 0.6rem;
   background: rgba(17, 90, 166, 0.2);
   color: #e8f3ff;
@@ -3305,11 +3360,8 @@ h1 {
   top: 8vh;
   width: 120vw;
   aspect-ratio: 1 / 1;
-  border-radius: 999px;
-  background:
-    linear-gradient(120deg, rgba(10, 40, 69, 0.18), rgba(17, 90, 166, 0.28)),
-    radial-gradient(circle at 24% 22%, rgba(223, 206, 188, 0.78) 0 18%, transparent 34%),
-    linear-gradient(145deg, #2f6f95, #184a73 52%, #102e4a);
+  border-radius: 12px;
+  background: linear-gradient(to top, #0b3f78 0%, #7da3c9 100%);
   transform: translate(-50%, calc((1 - var(--footer-progress)) * 24vh))
     scale(calc(0.42 + var(--footer-progress) * 1.72));
   transform-origin: center center;
@@ -3390,17 +3442,22 @@ h1 {
 .footer-subscribe input {
   flex: 1;
   border: 1px solid rgba(18, 31, 46, 0.18);
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.62rem 0.8rem;
 }
 
 .footer-subscribe button {
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--sand);
   color: #ffffff;
   padding: 0.62rem 1rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .footer-right h3 {
@@ -3431,7 +3488,7 @@ h1 {
 .copy-email-icon {
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: 12px;
   border: 1px solid rgba(247, 248, 250, 0.26);
   background:
     linear-gradient(120deg, rgba(10, 40, 69, 0.18), rgba(17, 90, 166, 0.28)),
@@ -3495,7 +3552,7 @@ h1 {
 .footer-socials span {
   width: 36px;
   height: 36px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: rgba(17, 90, 166, 0.08);
@@ -3581,7 +3638,7 @@ h1 {
 .admin-web-link {
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: rgba(17, 90, 166, 0.12);
@@ -3637,7 +3694,7 @@ h1 {
 .admin-scroll-progress {
   width: 100%;
   height: 2px;
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(17, 90, 166, 0.12);
   overflow: hidden;
 }
@@ -3730,7 +3787,7 @@ h1 {
 .admin-sidebar-head button,
 .admin-mobile-sidebar-btn {
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.35rem 0.7rem;
   background: rgba(247, 248, 250, 0.2);
   color: #f7f8fa;
@@ -3831,14 +3888,14 @@ h1 {
 .admin-actions button,
 .admin-json-editor button {
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.5rem 0.9rem;
   cursor: pointer;
 }
 
 .admin-btn {
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.54rem 0.95rem;
   cursor: pointer;
   background: rgba(17, 90, 166, 0.12);
@@ -3924,7 +3981,7 @@ h1 {
 .admin-team-preview-avatar {
   width: 38px;
   height: 38px;
-  border-radius: 999px;
+  border-radius: 12px;
   display: inline-grid;
   place-items: center;
   background: rgba(17, 90, 166, 0.12);
@@ -4081,7 +4138,7 @@ h1 {
 .admin-editor-head button,
 .admin-editor-foot button {
   border: none;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.48rem 0.9rem;
   cursor: pointer;
   font-family: 'Inter Tight', sans-serif;
@@ -4306,7 +4363,7 @@ h1 {
 .admin-upload-progress {
   width: 100%;
   height: 8px;
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(17, 90, 166, 0.12);
   overflow: hidden;
 }
@@ -4398,7 +4455,7 @@ h1 {
 .admin-dashboard-grid a {
   display: inline-flex;
   margin-top: 0.65rem;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.44rem 0.82rem;
   background: rgba(17, 90, 166, 0.12);
 }
@@ -4692,7 +4749,7 @@ h1 {
 
 .dialog-close {
   border: 0;
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.45rem 0.7rem;
   background: var(--brand-blue);
   color: var(--sand);
@@ -4816,7 +4873,7 @@ h1 {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 999px;
+    border-radius: 12px;
     border: 0;
     background: #ffffff;
     color: #115aa6;
@@ -5043,9 +5100,9 @@ h1 {
     padding: 0 0.1rem;
   }
 
-  .about-services-header p {
+  .about-services-nav-arrows {
     margin: 0.55rem 0 0;
-    text-align: left;
+    justify-self: start;
   }
 
   .about-services-cards-track {

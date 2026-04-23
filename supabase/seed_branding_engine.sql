@@ -99,7 +99,7 @@ insert into branding_content (
   'Subscribe to our newsletter.',
   'Stalled revenue, leaky funnels, stretched leadership. Whatever is holding you back, let''s solve it.',
   'synergy',
-  'Hello@synergypm.com',
+  'Hello@synergypm.ae',
   null,
   null
 ) on conflict (id) do update set

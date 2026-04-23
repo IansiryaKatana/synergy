@@ -606,7 +606,12 @@ function App() {
               </h2>
               <form className="footer-subscribe">
                 <input type="email" placeholder="Email" />
-                <button type="button">Subscribe</button>
+                <button type="button">
+                  Subscribe
+                  <span className="call-btn-icon" aria-hidden="true">
+                    <UpRightArrowIcon />
+                  </span>
+                </button>
               </form>
             </div>
             <div className="footer-right">
@@ -908,20 +913,35 @@ function App() {
             <p className="subtitle">
               {siteContent.branding.hero_subtitle}
             </p>
-            <div className="cta-row">
-              <a className="primary" href="/services/project-management">
-                What we do
-                <span className="about-primary-icon" aria-hidden="true">
-                  <UpRightArrowIcon />
-                </span>
-              </a>
-            </div>
           </div>
         </section>
         <section className="about-services-section" aria-label="About page services">
           <header className="about-services-header">
             <h2>{siteContent.branding.services_title}</h2>
-            <p>{siteContent.branding.services_description}</p>
+            <div className="about-services-nav-arrows" aria-label="About services navigation">
+              <button
+                type="button"
+                className="about-services-nav-arrow"
+                onClick={() => setAboutServicesIndex((index) => Math.max(0, index - 1))}
+                disabled={aboutServicesIndex <= 0}
+                aria-label="Previous services slide"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M15 6l-6 6 6 6" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="about-services-nav-arrow"
+                onClick={() => setAboutServicesIndex((index) => Math.min(aboutMaxSlideIndex, index + 1))}
+                disabled={aboutServicesIndex >= aboutMaxSlideIndex}
+                aria-label="Next services slide"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </button>
+            </div>
           </header>
           <div className="about-services-cards-viewport">
             <div
@@ -1155,6 +1175,9 @@ function App() {
               <div className="cta-row">
                 <a className="primary contact-hero-primary" href="/about-us">
                   Learn More
+                  <span className="call-btn-icon" aria-hidden="true">
+                    <UpRightArrowIcon />
+                  </span>
                 </a>
               </div>
             </div>
@@ -1200,10 +1223,15 @@ function App() {
                   value={contactMessage}
                   onChange={(event) => setContactMessage(event.target.value)}
                   placeholder="Your Message"
-                  rows={4}
+                  rows={6}
                   required
                 />
-                <button type="submit" className="contact-page-form-submit">Send message</button>
+                <button type="submit" className="contact-page-form-submit">
+                  <span>Send message</span>
+                  <span className="call-btn-icon" aria-hidden="true">
+                    <UpRightArrowIcon />
+                  </span>
+                </button>
               </form>
             </aside>
           </div>
@@ -1515,8 +1543,11 @@ function App() {
                     {siteContent.branding.hero_subtitle}
                   </p>
                   <div className="cta-row">
-                    <a className="primary" href="/services/project-management">
+                    <a className="primary home-hero-primary" href="/services/project-management">
                       Our Services
+                      <span className="call-btn-icon" aria-hidden="true">
+                        <UpRightArrowIcon />
+                      </span>
                     </a>
                   </div>
                 </div>
@@ -1574,6 +1605,9 @@ function App() {
             </label>
             <button type="submit" className="primary">
               Submit Request
+              <span className="call-btn-icon" aria-hidden="true">
+                <UpRightArrowIcon />
+              </span>
             </button>
           </form>
           <button
