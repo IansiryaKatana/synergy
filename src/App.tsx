@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ComponentType } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ComponentType, type FormEvent } from 'react'
 import PhoneInputLib from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { AdminDashboard, type AdminPage } from './components/AdminDashboard'
 import Noise from './components/Noise'
 import { TextPressureWord } from './components/TextPressureWord'
-import { contentApi, type ServiceItem, type SiteContent, type TeamMember } from './lib/content'
+import { contentApi, type JobPost, type ServiceItem, type SiteContent, type TeamMember } from './lib/content'
 
 type DialogMode = 'none' | 'book'
 type PhoneInputProps = {
@@ -148,6 +148,14 @@ function App() {
   const [contactEmail, setContactEmail] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   const [contactMessage, setContactMessage] = useState('')
+  const [jobApplicantName, setJobApplicantName] = useState('')
+  const [jobApplicantEmail, setJobApplicantEmail] = useState('')
+  const [jobApplicantPhone, setJobApplicantPhone] = useState('')
+  const [jobApplicantNote, setJobApplicantNote] = useState('')
+  const [jobApplicantCvFile, setJobApplicantCvFile] = useState<File | null>(null)
+  const [isSubmittingJobApplication, setIsSubmittingJobApplication] = useState(false)
+  const [jobApplicationStatus, setJobApplicationStatus] = useState('')
+  const [showCareersReturnHeader, setShowCareersReturnHeader] = useState(false)
   const [aboutServicesIndex, setAboutServicesIndex] = useState(0)
   const [aboutTeamIndex, setAboutTeamIndex] = useState(0)
   const [viewportWidth, setViewportWidth] = useState(
@@ -161,6 +169,7 @@ function App() {
     services: [],
     insights: [],
     media: [],
+    jobs: [],
   }))
   const [emailLabel, setEmailLabel] = useState(contentApi.fallback.branding.footer_email)
   const heroSceneRef = useRef<HTMLElement | null>(null)
@@ -173,6 +182,7 @@ function App() {
   const servicesHubTrackRef = useRef<HTMLDivElement | null>(null)
   const servicesHubCardRefs = useRef<Array<HTMLElement | null>>([])
   const lastScrollYRef = useRef(0)
+  const careersLastScrollRef = useRef(0)
 
   const navigateWithTransition = useCallback(
     (target: string, options?: { replace?: boolean }) => {
@@ -469,12 +479,21 @@ function App() {
     setMemberEmailLabel(selectedMember.email)
   }, [selectedMember])
 
+  useEffect(() => {
+    setJobApplicationStatus('')
+    setJobApplicantName('')
+    setJobApplicantEmail('')
+    setJobApplicantPhone('')
+    setJobApplicantNote('')
+    setJobApplicantCvFile(null)
+  }, [activeRoute])
+
   const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
   const adminPage: AdminPage = (() => {
     if (typeof window === 'undefined') return 'dashboard'
     const part = window.location.pathname.replace(/^\/admin\/?/, '').split('/')[0]
     if (!part) return 'dashboard'
-    if (part === 'branding' || part === 'team' || part === 'services' || part === 'insights' || part === 'media') return part
+    if (part === 'branding' || part === 'team' || part === 'services' || part === 'insights' || part === 'media' || part === 'careers') return part
     return 'dashboard'
   })()
   const homepageTeam = siteContent.team.slice(0, 6)
@@ -492,6 +511,7 @@ function App() {
         services={siteContent.services}
         insights={siteContent.insights}
         media={siteContent.media}
+        jobs={siteContent.jobs}
         onRefresh={loadContent}
       />
     )
@@ -548,14 +568,94 @@ function App() {
   const isServicesRoute = activePathname.startsWith('/services')
   const isProjectsRoute = activePathname === '/projects' || activePathname.startsWith('/projects/')
   const isAboutRoute = activePathname === '/about-us' || activePathname.startsWith('/about-us/')
+  const isCareersRoute = activePathname === '/careers' || activePathname.startsWith('/careers/')
   const isContactRoute = activePathname === '/contact-us' || activePathname.startsWith('/contact-us/')
   const serviceNavClass = () => (isServicesRoute ? 'active' : '')
   const projectNavClass = () => (isProjectsRoute ? 'active' : '')
   const aboutNavClass = () => (isAboutRoute ? 'active' : '')
+  const careersNavClass = () => (isCareersRoute ? 'active' : '')
   const contactNavClass = () => (isContactRoute ? 'active' : '')
+  const [careersDepartment, setCareersDepartment] = useState('View all')
+  const visibleJobs = useMemo(() => {
+    const jobs = siteContent.jobs
+    if (careersDepartment === 'View all') return jobs
+    return jobs.filter((job) => job.department === careersDepartment)
+  }, [careersDepartment, siteContent.jobs])
+  const careerDepartments = useMemo(() => {
+    const uniqueDepartments = Array.from(new Set(siteContent.jobs.map((job) => job.department).filter(Boolean)))
+    return ['View all', ...uniqueDepartments]
+  }, [siteContent.jobs])
+  const selectedCareerId = useMemo(() => {
+    if (!isCareersRoute) return ''
+    const pathWithoutQuery = activePathname.split('?')[0]
+    const parts = pathWithoutQuery.split('/').filter(Boolean)
+    return parts.length >= 2 ? parts[1] : ''
+  }, [activePathname, isCareersRoute])
+  const selectedCareerJob = useMemo(
+    () => siteContent.jobs.find((job) => job.id.toLowerCase() === selectedCareerId.toLowerCase()) ?? null,
+    [selectedCareerId, siteContent.jobs],
+  )
+  const isCareerDetailRoute = isCareersRoute && selectedCareerId.length > 0
+  useEffect(() => {
+    if (!isCareersRoute) {
+      setShowCareersReturnHeader(false)
+      return
+    }
+    const onCareersScroll = () => {
+      const currentScrollY = window.scrollY || 0
+      const scrollingUp = currentScrollY < careersLastScrollRef.current - 4
+      const scrollingDown = currentScrollY > careersLastScrollRef.current + 4
+      setShowCareersReturnHeader((previous) => {
+        if (currentScrollY <= 24) return false
+        if (scrollingUp) return true
+        if (scrollingDown) return false
+        return previous
+      })
+      careersLastScrollRef.current = currentScrollY
+    }
+    onCareersScroll()
+    window.addEventListener('scroll', onCareersScroll, { passive: true })
+    window.addEventListener('resize', onCareersScroll)
+    return () => {
+      window.removeEventListener('scroll', onCareersScroll)
+      window.removeEventListener('resize', onCareersScroll)
+    }
+  }, [isCareersRoute])
   const navigateToContact = () => {
     navigateWithTransition('/contact-us')
     setIsMobileMenuOpen(false)
+  }
+  const submitJobApplication = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!selectedCareerJob) return
+    if (!jobApplicantCvFile) {
+      setJobApplicationStatus('Please upload your CV before submitting.')
+      return
+    }
+    setIsSubmittingJobApplication(true)
+    setJobApplicationStatus('')
+    try {
+      const uploadedCv = await contentApi.uploadMedia(jobApplicantCvFile, 'career-cv')
+      await contentApi.submitJobApplication({
+        job_id: selectedCareerJob.id,
+        full_name: jobApplicantName.trim(),
+        email: jobApplicantEmail.trim(),
+        phone: jobApplicantPhone.trim(),
+        cover_note: jobApplicantNote.trim(),
+        cv_url: uploadedCv.publicUrl,
+      })
+      setJobApplicationStatus('Application sent successfully. Our team will contact you shortly.')
+      setJobApplicantName('')
+      setJobApplicantEmail('')
+      setJobApplicantPhone('')
+      setJobApplicantNote('')
+      setJobApplicantCvFile(null)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to submit application.'
+      setJobApplicationStatus(message)
+    } finally {
+      setIsSubmittingJobApplication(false)
+    }
   }
   const activeServiceCard =
     serviceCards.find((service) => service.href.toLowerCase() === activePathname) ?? null
@@ -670,6 +770,7 @@ function App() {
                   <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                   <a href="/projects" className={projectNavClass()}>Projects</a>
                   <a href="/about-us" className={aboutNavClass()}>About us</a>
+                  <a href="/careers" className={careersNavClass()}>Careers</a>
                   <a href="/contact-us" className={contactNavClass()}>Contact us</a>
                 </nav>
                 <button
@@ -722,6 +823,9 @@ function App() {
                 </a>
                 <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                   About us
+                </a>
+                <a href="/careers" className={careersNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
+                  Careers
                 </a>
                 <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                   Contact us
@@ -848,6 +952,7 @@ function App() {
                 <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                 <a href="/projects" className={projectNavClass()}>Projects</a>
                 <a href="/about-us" className={aboutNavClass()}>About us</a>
+                <a href="/careers" className={careersNavClass()}>Careers</a>
                 <a href="/contact-us" className={contactNavClass()}>Contact us</a>
               </nav>
               <button
@@ -893,6 +998,9 @@ function App() {
               </a>
               <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                 About us
+              </a>
+              <a href="/careers" className={careersNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
+                Careers
               </a>
               <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                 Contact us
@@ -1111,6 +1219,7 @@ function App() {
                 <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                 <a href="/projects" className={projectNavClass()}>Projects</a>
                 <a href="/about-us" className={aboutNavClass()}>About us</a>
+                <a href="/careers" className={careersNavClass()}>Careers</a>
                 <a href="/contact-us" className={contactNavClass()}>Contact us</a>
               </nav>
               <button
@@ -1156,6 +1265,9 @@ function App() {
               </a>
               <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                 About us
+              </a>
+              <a href="/careers" className={careersNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
+                Careers
               </a>
               <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                 Contact us
@@ -1240,6 +1352,224 @@ function App() {
     )
   }
 
+  if (isCareersRoute) {
+    const careersHeroJobs = visibleJobs.length > 0 ? visibleJobs : siteContent.jobs
+    return (
+      <main className="careers-page-shell">
+        <header className={`top-nav top-nav-global return-visible returning-header careers-return-header ${showCareersReturnHeader ? '' : 'scroll-hidden'}`}>
+          <div className="nav-bubble">
+            <a className="brand" href="/">
+              <img src="/SYNERGY logo.png" alt="Synergy Project Management" className="brand-wordmark-image" />
+            </a>
+            <nav className="menu">
+              <a href="/" className={navClass('#home')}>Home</a>
+              <a href="/services/project-management" className={serviceNavClass()}>Services</a>
+              <a href="/projects" className={projectNavClass()}>Projects</a>
+              <a href="/about-us" className={aboutNavClass()}>About us</a>
+              <a href="/careers" className={careersNavClass()}>Careers</a>
+              <a href="/contact-us" className={contactNavClass()}>Contact us</a>
+            </nav>
+            <button
+              className="menu-toggle"
+              onClick={() => setIsMobileMenuOpen((open) => !open)}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-drawer"
+            >
+              {isMobileMenuOpen ? 'Close' : 'Menu'}
+            </button>
+            <button className="call-btn" onClick={navigateToContact}>
+              Get in touch
+              <span className="call-btn-icon" aria-hidden="true">
+                <UpRightArrowIcon />
+              </span>
+            </button>
+          </div>
+        </header>
+        <section className="careers-page-panel">
+          <header className="top-nav careers-page-header">
+            <div className="nav-bubble">
+              <a className="brand" href="/">
+                <img src="/syngergy-logo.png" alt={siteContent.branding.company_name} className="brand-wordmark-image" />
+              </a>
+              <nav className="menu">
+                <a href="/" className={navClass('#home')}>Home</a>
+                <a href="/services/project-management" className={serviceNavClass()}>Services</a>
+                <a href="/projects" className={projectNavClass()}>Projects</a>
+                <a href="/about-us" className={aboutNavClass()}>About us</a>
+                <a href="/careers" className={careersNavClass()}>Careers</a>
+                <a href="/contact-us" className={contactNavClass()}>Contact us</a>
+              </nav>
+              <button
+                className="menu-toggle"
+                onClick={() => setIsMobileMenuOpen((open) => !open)}
+                aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-nav-drawer"
+              >
+                {isMobileMenuOpen ? 'Close' : 'Menu'}
+              </button>
+            </div>
+            <button className="call-btn" onClick={navigateToContact}>
+              Get in touch
+              <span className="call-btn-icon" aria-hidden="true">
+                <UpRightArrowIcon />
+              </span>
+            </button>
+          </header>
+          <div
+            className={`mobile-menu-overlay ${isMobileMenuOpen ? 'open' : ''}`}
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden={!isMobileMenuOpen}
+          />
+          <aside
+            id="mobile-nav-drawer"
+            className={`mobile-menu-drawer ${isMobileMenuOpen ? 'open' : ''}`}
+            aria-hidden={!isMobileMenuOpen}
+          >
+            <nav className="mobile-menu-links">
+              <a href="/" className={navClass('#home')} onClick={() => setIsMobileMenuOpen(false)}>Home</a>
+              <a href="/services/project-management" className={serviceNavClass()} onClick={() => setIsMobileMenuOpen(false)}>Services</a>
+              <a href="/projects" className={projectNavClass()} onClick={() => setIsMobileMenuOpen(false)}>Projects</a>
+              <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>About us</a>
+              <a href="/careers" className={careersNavClass()} onClick={() => setIsMobileMenuOpen(false)}>Careers</a>
+              <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>Contact us</a>
+            </nav>
+            <button className="mobile-menu-call" onClick={navigateToContact}>Get in touch</button>
+          </aside>
+
+          <div className="careers-page-content">
+            {isCareerDetailRoute && selectedCareerJob ? (
+              <section className="career-detail-shell">
+                <a className="career-back-link entrance-seq entrance-1" href="/careers">
+                  Back to careers
+                </a>
+                <p className="careers-hiring-pill entrance-seq entrance-2">{selectedCareerJob.department}</p>
+                <h1 className="entrance-seq entrance-2">{selectedCareerJob.title}</h1>
+                <p className="entrance-seq entrance-3">{selectedCareerJob.summary}</p>
+                <div className="career-job-meta entrance-seq entrance-3">
+                  <span className="career-meta-pill career-meta-pill-location">
+                    {selectedCareerJob.location_label || selectedCareerJob.workplace_type || 'Remote'}
+                  </span>
+                  <span
+                    className={`career-meta-pill career-meta-pill-employment ${
+                      (selectedCareerJob.employment_type || '').toLowerCase().includes('full-time') ? 'is-fulltime' : ''
+                    }`}
+                  >
+                    {selectedCareerJob.employment_type || 'Full-time'}
+                  </span>
+                </div>
+                <form className="career-apply-form entrance-seq entrance-4" onSubmit={submitJobApplication}>
+                  <h2>Apply for this role</h2>
+                  <div className="career-apply-grid">
+                    <input
+                      type="text"
+                      placeholder="Full name"
+                      value={jobApplicantName}
+                      onChange={(event) => setJobApplicantName(event.target.value)}
+                      required
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email address"
+                      value={jobApplicantEmail}
+                      onChange={(event) => setJobApplicantEmail(event.target.value)}
+                      required
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Phone number"
+                      value={jobApplicantPhone}
+                      onChange={(event) => setJobApplicantPhone(event.target.value)}
+                    />
+                    <label className="career-file-upload">
+                      <span>{jobApplicantCvFile ? jobApplicantCvFile.name : 'Upload CV (PDF or DOCX)'}</span>
+                      <input
+                        key={jobApplicantCvFile?.name ?? 'no-cv-selected'}
+                        type="file"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null
+                          setJobApplicantCvFile(file)
+                        }}
+                        required
+                      />
+                    </label>
+                    <textarea
+                      placeholder="Tell us why you're a great fit"
+                      rows={6}
+                      value={jobApplicantNote}
+                      onChange={(event) => setJobApplicantNote(event.target.value)}
+                      required
+                    />
+                  </div>
+                  {jobApplicationStatus ? <p className="career-apply-status">{jobApplicationStatus}</p> : null}
+                  <button className="career-apply-submit" type="submit" disabled={isSubmittingJobApplication}>
+                    {isSubmittingJobApplication ? 'Submitting...' : 'Submit application'}
+                    <span className="call-btn-icon" aria-hidden="true">
+                      <UpRightArrowIcon />
+                    </span>
+                  </button>
+                </form>
+              </section>
+            ) : (
+              <>
+                <p className="careers-hiring-pill entrance-seq entrance-1">We&apos;re hiring!</p>
+                <h1 className="entrance-seq entrance-2">Be part of our mission</h1>
+                <p className="entrance-seq entrance-3">
+                  We&apos;re looking for passionate people to join us on our mission. We value flat hierarchies, clear
+                  communication, and full ownership and responsibility.
+                </p>
+                <div className="careers-filter-row entrance-seq entrance-3" role="tablist" aria-label="Careers departments">
+                  {careerDepartments.map((department) => (
+                    <button
+                      key={department}
+                      type="button"
+                      className={`careers-filter-chip ${careersDepartment === department ? 'active' : ''}`}
+                      onClick={() => setCareersDepartment(department)}
+                      aria-selected={careersDepartment === department}
+                    >
+                      {department}
+                    </button>
+                  ))}
+                </div>
+                <section className="careers-list" aria-label="Open roles">
+                  {careersHeroJobs.map((job: JobPost, index: number) => (
+                    <article
+                      key={job.id}
+                      className="career-job-card entrance-seq"
+                      style={{ '--seq': index + 4 } as CSSProperties}
+                    >
+                      <div className="career-job-main">
+                        <h2>{job.title}</h2>
+                        <p>{job.summary}</p>
+                        <div className="career-job-meta">
+                          <span className="career-meta-pill career-meta-pill-location">
+                            {job.location_label || job.workplace_type || 'Remote'}
+                          </span>
+                          <span
+                            className={`career-meta-pill career-meta-pill-employment ${
+                              (job.employment_type || '').toLowerCase().includes('full-time') ? 'is-fulltime' : ''
+                            }`}
+                          >
+                            {job.employment_type || 'Full-time'}
+                          </span>
+                        </div>
+                      </div>
+                      <a className="career-apply-link" href={`/careers/${job.id}`}>
+                        Apply <UpRightArrowIcon />
+                      </a>
+                    </article>
+                  ))}
+                </section>
+              </>
+            )}
+          </div>
+        </section>
+      </main>
+    )
+  }
+
   if (activeServiceCard) {
     const activeHubService = serviceCards[servicesHubIndex] ?? activeServiceCard
     const activeHubServiceDetails = activeHubService.detail_sections?.[0]?.points?.slice(0, 3) ?? [activeHubService.description]
@@ -1257,8 +1587,9 @@ function App() {
                     <a href="/" className={navClass('#home')}>Home</a>
                     <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                     <a href="/projects" className={projectNavClass()}>Projects</a>
-                    <a href="/about-us" className={aboutNavClass()}>About us</a>
-                    <a href="/contact-us" className={contactNavClass()}>Contact us</a>
+                <a href="/about-us" className={aboutNavClass()}>About us</a>
+                <a href="/careers" className={careersNavClass()}>Careers</a>
+                <a href="/contact-us" className={contactNavClass()}>Contact us</a>
                   </nav>
                   <button
                     className="menu-toggle"
@@ -1426,6 +1757,7 @@ function App() {
               <a href="/services/project-management" className={serviceNavClass()}>Services</a>
               <a href="/projects" className={projectNavClass()}>Projects</a>
               <a href="/about-us" className={aboutNavClass()}>About us</a>
+              <a href="/careers" className={careersNavClass()}>Careers</a>
               <a href="/contact-us" className={contactNavClass()}>Contact us</a>
             </nav>
             <button
@@ -1474,6 +1806,9 @@ function App() {
           <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
             About us
           </a>
+          <a href="/careers" className={careersNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
+            Careers
+          </a>
           <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
             Contact us
           </a>
@@ -1515,6 +1850,7 @@ function App() {
                   <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                   <a href="/projects" className={projectNavClass()}>Projects</a>
                   <a href="/about-us" className={aboutNavClass()}>About us</a>
+                  <a href="/careers" className={careersNavClass()}>Careers</a>
                   <a href="/contact-us" className={contactNavClass()}>Contact us</a>
                 </nav>
                 <button

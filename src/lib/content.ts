@@ -50,6 +50,28 @@ export type MediaItem = {
   is_active: boolean
 }
 
+export type JobPost = {
+  id: string
+  title: string
+  department: string
+  summary: string
+  location_label: string
+  employment_type: string
+  workplace_type: string
+  apply_url?: string | null
+  sort_order: number
+  is_active: boolean
+}
+
+export type JobApplicationInput = {
+  job_id: string
+  full_name: string
+  email: string
+  phone?: string
+  cover_note?: string
+  cv_url?: string
+}
+
 export type BrandingContent = {
   id: string
   company_name: string
@@ -76,6 +98,7 @@ export type SiteContent = {
   services: ServiceItem[]
   insights: InsightItem[]
   media: MediaItem[]
+  jobs: JobPost[]
 }
 
 const fallback: SiteContent = {
@@ -246,6 +269,44 @@ const fallback: SiteContent = {
     { id: 'social-3', kind: 'social', label: 'ig', value: 'ig', sort_order: 3, is_active: true },
     { id: 'social-4', kind: 'social', label: 'f', value: 'f', sort_order: 4, is_active: true },
   ],
+  jobs: [
+    {
+      id: 'job-product-designer',
+      title: 'Product Designer',
+      department: 'Design',
+      summary: 'We are looking for a mid-level product designer to join our team.',
+      location_label: '100% remote',
+      employment_type: 'Full-time',
+      workplace_type: 'Remote',
+      apply_url: '#',
+      sort_order: 1,
+      is_active: true,
+    },
+    {
+      id: 'job-engineering-manager',
+      title: 'Engineering Manager',
+      department: 'Development',
+      summary: 'We are looking for an experienced engineering manager to join our team.',
+      location_label: '100% remote',
+      employment_type: 'Full-time',
+      workplace_type: 'Remote',
+      apply_url: '#',
+      sort_order: 2,
+      is_active: true,
+    },
+    {
+      id: 'job-customer-success-manager',
+      title: 'Customer Success Manager',
+      department: 'Customer Service',
+      summary: 'We are looking for a customer success manager to join our team.',
+      location_label: '100% remote',
+      employment_type: 'Full-time',
+      workplace_type: 'Remote',
+      apply_url: '#',
+      sort_order: 3,
+      is_active: true,
+    },
+  ],
 }
 
 const orderBy = <T extends { sort_order: number }>(items: T[]) =>
@@ -255,12 +316,13 @@ export const contentApi = {
   fallback,
   async getSiteContent(): Promise<SiteContent> {
     try {
-      const [branding, team, services, insights, media] = await Promise.all([
+      const [branding, team, services, insights, media, jobs] = await Promise.all([
         supabaseRest.selectOne<BrandingContent>('branding_content'),
         supabaseRest.select<TeamMember>('team_members'),
         supabaseRest.select<ServiceItem>('services'),
         supabaseRest.select<InsightItem>('insights'),
         supabaseRest.select<MediaItem>('media_items'),
+        supabaseRest.select<JobPost>('job_posts'),
       ])
       return {
         branding: branding ?? fallback.branding,
@@ -268,6 +330,7 @@ export const contentApi = {
         services: orderBy(services).filter((x) => x.is_active),
         insights: orderBy(insights).filter((x) => x.is_active),
         media: orderBy(media).filter((x) => x.is_active),
+        jobs: orderBy(jobs).filter((x) => x.is_active),
       }
     } catch {
       return {
@@ -276,6 +339,7 @@ export const contentApi = {
         services: [],
         insights: [],
         media: [],
+        jobs: [],
       }
     }
   },
@@ -287,6 +351,13 @@ export const contentApi = {
   },
   async upsertRow(table: string, payload: Record<string, unknown>) {
     await supabaseRest.upsert(table, payload)
+  },
+  async submitJobApplication(payload: JobApplicationInput) {
+    await supabaseRest.upsert('job_applications', {
+      ...payload,
+      submitted_at: new Date().toISOString(),
+      status: 'new',
+    })
   },
   async uploadMedia(file: File, folder?: string, onProgress?: (percent: number) => void) {
     return supabaseRest.uploadMedia(file, folder, undefined, onProgress)

@@ -13,12 +13,13 @@ import {
   contentApi,
   type BrandingContent,
   type InsightItem,
+  type JobPost,
   type MediaItem,
   type ServiceItem,
   type TeamMember,
 } from '../lib/content'
 
-type EntityType = 'team_members' | 'services' | 'insights' | 'media_items'
+type EntityType = 'team_members' | 'services' | 'insights' | 'media_items' | 'job_posts'
 
 type AdminProps = {
   page: AdminPage
@@ -27,10 +28,11 @@ type AdminProps = {
   services: ServiceItem[]
   insights: InsightItem[]
   media: MediaItem[]
+  jobs: JobPost[]
   onRefresh: () => Promise<void>
 }
 
-export type AdminPage = 'dashboard' | 'branding' | 'team' | 'services' | 'insights' | 'media'
+export type AdminPage = 'dashboard' | 'branding' | 'team' | 'services' | 'insights' | 'media' | 'careers'
 
 type SidebarItem = {
   id: AdminPage
@@ -44,6 +46,7 @@ const PAGE_TO_ENTITY: Partial<Record<AdminPage, EntityType>> = {
   services: 'services',
   insights: 'insights',
   media: 'media_items',
+  careers: 'job_posts',
 }
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
@@ -52,6 +55,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { id: 'team', label: 'Team', href: '/admin/team', icon: Users },
   { id: 'services', label: 'Services', href: '/admin/services', icon: Briefcase },
   { id: 'insights', label: 'Projects', href: '/admin/insights', icon: ChartNoAxesColumn },
+  { id: 'careers', label: 'Careers', href: '/admin/careers', icon: Briefcase },
   { id: 'media', label: 'Media', href: '/admin/media', icon: GalleryVerticalEnd },
 ]
 
@@ -85,6 +89,7 @@ export function AdminDashboard(props: AdminProps) {
     if (entity === 'team_members') return props.team
     if (entity === 'services') return props.services
     if (entity === 'insights') return props.insights
+    if (entity === 'job_posts') return props.jobs
     return props.media
   }, [entity, props])
 
@@ -353,6 +358,7 @@ export function AdminDashboard(props: AdminProps) {
             <article><p>Team</p><strong>{props.team.length}</strong><a href="/admin/team">Manage</a></article>
             <article><p>Services</p><strong>{props.services.length}</strong><a href="/admin/services">Manage</a></article>
             <article><p>Projects</p><strong>{props.insights.length}</strong><a href="/admin/insights">Manage</a></article>
+            <article><p>Careers</p><strong>{props.jobs.length}</strong><a href="/admin/careers">Manage</a></article>
             <article><p>Media</p><strong>{props.media.length}</strong><a href="/admin/media">Manage</a></article>
           </section>
         ) : null}
@@ -760,6 +766,7 @@ function defaultForm(entity: EntityType): Record<string, unknown> {
   if (entity === 'team_members') return { ...base, initials: '', name: '', role: '', bio: '', email: '', number: '', avatar_url: '' }
   if (entity === 'services') return { ...base, tag: '', title: '', description: '', quote: '', image_url: '', detail_sections: '[]' }
   if (entity === 'insights') return { ...base, chip: '', date_label: '', title: '', alt_style: false, image_url: '' }
+  if (entity === 'job_posts') return { ...base, title: '', department: '', summary: '', location_label: '', employment_type: '', workplace_type: '', apply_url: '' }
   return { ...base, kind: 'asset', label: '', value: '', file_path: '', file_url: '' }
 }
 
@@ -777,6 +784,7 @@ function validatePayload(entity: EntityType, payload: Record<string, unknown>) {
     team_members: ['id', 'name', 'role', 'email'],
     services: ['id', 'tag', 'title', 'description'],
     insights: ['id', 'chip', 'date_label', 'title'],
+    job_posts: ['id', 'title', 'department', 'summary'],
     media_items: ['id', 'kind', 'label', 'value'],
   }
   const missing = requiredMap[entity].filter((key) => !payload[key])
@@ -800,6 +808,7 @@ function renderFields(
     team_members: ['avatar_url', 'id', 'initials', 'name', 'role', 'bio', 'email', 'number', 'sort_order', 'is_active'],
     services: ['image_url', 'id', 'tag', 'title', 'description', 'quote', 'sort_order', 'is_active'],
     insights: ['image_url', 'id', 'chip', 'date_label', 'title', 'alt_style', 'sort_order', 'is_active'],
+    job_posts: ['id', 'title', 'department', 'summary', 'location_label', 'employment_type', 'workplace_type', 'apply_url', 'sort_order', 'is_active'],
     media_items: ['value', 'id', 'kind', 'label', 'file_path', 'file_url', 'sort_order', 'is_active'],
   }
   return (
