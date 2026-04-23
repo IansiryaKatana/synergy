@@ -87,9 +87,9 @@ insert into branding_content (
   services_description, team_title, insights_title, insights_description,
   footer_address, footer_newsletter_title, footer_pitch, footer_wordmark, footer_email, logo_url, favicon_url
 ) values (
-  'default', 'Synergy PM', 'Synergy Project Management',
+  'default', 'Synergy Project Management', 'Synergy Project Management',
   'Your growth partner for companies ready to scale.',
-  'Synergy PM helps corporate teams align strategy, delivery, and operational clarity.',
+  'Synergy Project Management helps corporate teams align strategy, delivery, and operational clarity.',
   'Services',
   'Department-focused delivery across Finance, Compliance, HR, and integrated Project Management.',
   'Meet the team behind the growth.',

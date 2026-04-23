@@ -81,11 +81,11 @@ export type SiteContent = {
 const fallback: SiteContent = {
   branding: {
     id: 'default',
-    company_name: 'Synergy PM',
+    company_name: 'Synergy Project Management',
     hero_eyebrow: 'Synergy Project Management',
     hero_title: 'Your growth partner for companies ready to scale.',
     hero_subtitle:
-      'Synergy PM helps corporate teams align strategy, delivery, and operational clarity.',
+      'Synergy Project Management helps corporate teams align strategy, delivery, and operational clarity.',
     services_title: 'Services',
     services_description:
       'Department-focused delivery across Finance, Compliance, HR, and integrated Project Management.',

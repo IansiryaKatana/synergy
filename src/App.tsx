@@ -35,6 +35,21 @@ function PlusGlyph() {
   )
 }
 
+function UpRightArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M8 16L16 8M10 8h6v6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function formatProjectTitle(title: string) {
   const firstLineRaw = title.includes('Hotel Apartment')
     ? title.replace('Hotel Apartment', '').trim()
@@ -118,9 +133,9 @@ function App() {
   const [sixthProgress, setSixthProgress] = useState(0)
   const [footerProgress, setFooterProgress] = useState(0)
   const [showReturnHeader, setShowReturnHeader] = useState(false)
-  const [showServiceMobileHeader, setShowServiceMobileHeader] = useState(true)
   const [showProjectsHeader, setShowProjectsHeader] = useState(true)
   const [showcaseIndex, setShowcaseIndex] = useState(0)
+  const [servicesHubIndex, setServicesHubIndex] = useState(0)
   const [insightsIndex, setInsightsIndex] = useState(0)
   const [isMobileViewport, setIsMobileViewport] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 680 : false,
@@ -133,6 +148,11 @@ function App() {
   const [contactEmail, setContactEmail] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   const [contactMessage, setContactMessage] = useState('')
+  const [aboutServicesIndex, setAboutServicesIndex] = useState(0)
+  const [aboutTeamIndex, setAboutTeamIndex] = useState(0)
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1280,
+  )
   const [activeRoute, setActiveRoute] = useState(resolveCurrentRoute)
   const [hasLoadedContent, setHasLoadedContent] = useState(false)
   const [siteContent, setSiteContent] = useState<SiteContent>(() => ({
@@ -145,12 +165,13 @@ function App() {
   const [emailLabel, setEmailLabel] = useState(contentApi.fallback.branding.footer_email)
   const heroSceneRef = useRef<HTMLElement | null>(null)
   const thirdSceneRef = useRef<HTMLElement | null>(null)
-  const serviceDetailSceneRef = useRef<HTMLElement | null>(null)
   const sixthSceneRef = useRef<HTMLElement | null>(null)
   const insightsSceneRef = useRef<HTMLElement | null>(null)
   const footerSceneRef = useRef<HTMLElement | null>(null)
   const showcaseTrackRef = useRef<HTMLDivElement | null>(null)
   const showcaseCardRefs = useRef<Array<HTMLElement | null>>([])
+  const servicesHubTrackRef = useRef<HTMLDivElement | null>(null)
+  const servicesHubCardRefs = useRef<Array<HTMLElement | null>>([])
   const lastScrollYRef = useRef(0)
 
   const navigateWithTransition = useCallback(
@@ -204,10 +225,25 @@ function App() {
   const fourthReveal = Math.max(0, Math.min(1, (thirdProgress - 0.56) / 0.26))
   const leftZoom = Math.max(0, Math.min(1, (thirdProgress - 0.64) / 0.14))
   const rightReveal = Math.max(0, Math.min(1, (thirdProgress - 0.8) / 0.14))
-  const serviceCards = siteContent.services.map((service) => ({
-    ...service,
-    href: resolveServiceHref(service),
-  }))
+  const serviceCards = useMemo(
+    () =>
+      siteContent.services.map((service) => ({
+        ...service,
+        href: resolveServiceHref(service),
+      })),
+    [siteContent.services],
+  )
+  const aboutServiceCards = serviceCards.length > 0
+    ? serviceCards
+    : contentApi.fallback.services.map((service) => ({
+        ...service,
+        href: resolveServiceHref(service),
+      }))
+  const aboutVisibleCards = 1
+  const aboutMaxSlideIndex = Math.max(0, aboutServiceCards.length - aboutVisibleCards)
+  const aboutTeamMembers = siteContent.team.length > 0 ? siteContent.team : contentApi.fallback.team
+  const aboutTeamVisibleCards = isMobileViewport ? 1 : viewportWidth >= 1440 ? 4 : viewportWidth >= 1024 ? 3 : 2
+  const aboutTeamMaxSlideIndex = Math.max(0, aboutTeamMembers.length - aboutTeamVisibleCards)
   const featuredInsights = useMemo(() => {
     const insightsWithImages = siteContent.insights.filter(
       (insight) => typeof insight.image_url === 'string' && insight.image_url.trim().length > 0,
@@ -240,9 +276,7 @@ function App() {
       const nextFooterProgress = computeFooterProgress(footerSceneRef.current)
       const scrollingUp = currentScrollY < lastScrollYRef.current - 4
       const scrollingDown = currentScrollY > lastScrollYRef.current + 4
-      const isServicePath = window.location.pathname.toLowerCase().startsWith('/services')
       const isProjectsPath = window.location.pathname.toLowerCase().startsWith('/projects')
-      const isMobileHeaderViewport = window.innerWidth <= 920
       const heroFullyPassed = nextHeroProgress > 0.98
       const returnHeaderEligible = currentScrollY > window.innerHeight + 40
       const footerActive = nextFooterProgress > 0.02
@@ -254,13 +288,6 @@ function App() {
         return previous
       })
 
-      setShowServiceMobileHeader((previous) => {
-        if (!isServicePath || !isMobileHeaderViewport) return true
-        if (isMobileMenuOpen || currentScrollY <= 12) return true
-        if (scrollingUp) return true
-        if (scrollingDown) return false
-        return previous
-      })
       setShowProjectsHeader((previous) => {
         if (!isProjectsPath) return true
         if (isMobileMenuOpen || currentScrollY <= 12) return true
@@ -324,7 +351,24 @@ function App() {
   }, [featuredInsights.length])
 
   useEffect(() => {
-    const onResize = () => setIsMobileViewport(window.innerWidth <= 680)
+    setAboutServicesIndex((previous) => {
+      if (aboutServiceCards.length === 0) return 0
+      return Math.min(previous, aboutMaxSlideIndex)
+    })
+  }, [aboutMaxSlideIndex, aboutServiceCards.length])
+
+  useEffect(() => {
+    setAboutTeamIndex((previous) => {
+      if (aboutTeamMembers.length === 0) return 0
+      return Math.min(previous, aboutTeamMaxSlideIndex)
+    })
+  }, [aboutTeamMaxSlideIndex, aboutTeamMembers.length])
+
+  useEffect(() => {
+    const onResize = () => {
+      setIsMobileViewport(window.innerWidth <= 680)
+      setViewportWidth(window.innerWidth)
+    }
     onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
@@ -501,14 +545,6 @@ function App() {
   const navClass = (route: string) => (activeRoute === route ? 'active' : '')
   const normalizedActiveRoute = activeRoute.toLowerCase()
   const activePathname = normalizedActiveRoute.startsWith('/') ? normalizedActiveRoute : '/'
-  const navigateToServices = () => {
-    const targetPath = '/services/project-management'
-    if (window.location.pathname.toLowerCase() === targetPath) {
-      setActiveRoute(targetPath)
-      return
-    }
-    navigateWithTransition(targetPath)
-  }
   const isServicesRoute = activePathname.startsWith('/services')
   const isProjectsRoute = activePathname === '/projects' || activePathname.startsWith('/projects/')
   const isAboutRoute = activePathname === '/about-us' || activePathname.startsWith('/about-us/')
@@ -523,6 +559,26 @@ function App() {
   }
   const activeServiceCard =
     serviceCards.find((service) => service.href.toLowerCase() === activePathname) ?? null
+
+  useEffect(() => {
+    if (!isServicesRoute || serviceCards.length === 0) return
+    const activeIndex = serviceCards.findIndex((service) => service.href.toLowerCase() === activePathname)
+    if (activeIndex >= 0) setServicesHubIndex(activeIndex)
+  }, [activePathname, isServicesRoute, serviceCards])
+
+  useEffect(() => {
+    if (serviceCards.length === 0) return
+    setServicesHubIndex((current) => Math.max(0, Math.min(current, serviceCards.length - 1)))
+  }, [serviceCards.length])
+
+  useEffect(() => {
+    if (!isServicesRoute) return
+    const track = servicesHubTrackRef.current
+    const card = servicesHubCardRefs.current[servicesHubIndex]
+    if (!track || !card) return
+    const targetLeft = Math.max(0, card.offsetLeft - 12)
+    track.scrollTo({ left: targetLeft, behavior: 'smooth' })
+  }, [isServicesRoute, servicesHubIndex])
 
   useEffect(() => {
     if (activePathname === '/services' || activePathname === '/services/' || activePathname === '/services/general') {
@@ -606,30 +662,10 @@ function App() {
                 </a>
                 <nav className="menu">
                   <a href="/" className={navClass('#home')}>Home</a>
-                  <div className={`menu-item-with-submenu ${serviceNavClass()}`}>
-                    <a
-                      href="#"
-                      className={serviceNavClass()}
-                      onClick={(event) => {
-                        event.preventDefault()
-                      }}
-                    >
-                      Services
-                    </a>
-                    <div className="menu-submenu">
-                      {serviceCards.map((service) => (
-                        <a
-                          key={`projects-page-nav-service-${service.id}`}
-                          href={service.href}
-                          className={normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}
-                        >
-                          {service.title}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
+                  <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                   <a href="/projects" className={projectNavClass()}>Projects</a>
                   <a href="/about-us" className={aboutNavClass()}>About us</a>
+                  <a href="/contact-us" className={contactNavClass()}>Contact us</a>
                 </nav>
                 <button
                   className="menu-toggle"
@@ -651,16 +687,7 @@ function App() {
               >
                 Get in touch
                 <span className="call-btn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path
-                      d="M7 17L17 7M9 7h8v8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <UpRightArrowIcon />
                 </span>
               </a>
             </header>
@@ -679,30 +706,20 @@ function App() {
                   Home
                 </a>
                 <a
-                  href="#"
+                  href="/services/project-management"
                   className={serviceNavClass()}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setIsMobileMenuOpen(false)
-                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Services
                 </a>
-                {serviceCards.map((service) => (
-                  <a
-                    key={`projects-page-mobile-nav-service-${service.id}`}
-                    href={service.href}
-                    className={`mobile-sub-link ${normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {service.title}
-                  </a>
-                ))}
                 <a href="/projects" className={projectNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                   Projects
                 </a>
                 <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                   About us
+                </a>
+                <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
+                  Contact us
                 </a>
               </nav>
               <button
@@ -751,12 +768,12 @@ function App() {
                   <button
                     className="insights-view-all"
                     onClick={() => {
-                      navigateWithTransition('/projects')
+                      navigateToContact()
                     }}
                   >
                     Lets Partner on a Project
-                    <span>
-                      <PlusGlyph />
+                    <span className="cta-arrow-icon" aria-hidden="true">
+                      <UpRightArrowIcon />
                     </span>
                   </button>
                 </aside>
@@ -810,35 +827,23 @@ function App() {
           <header className="top-nav about-page-header">
             <div className="nav-bubble">
               <a className="brand" href="/">
-                <img src="/syngergy-logo.png" alt={siteContent.branding.company_name} className="brand-wordmark-image" />
+                <img
+                  src="/syngergy-logo.png"
+                  alt={siteContent.branding.company_name}
+                  className="brand-wordmark-image about-brand-desktop"
+                />
+                <img
+                  src="/SYNERGY logo.png"
+                  alt={siteContent.branding.company_name}
+                  className="brand-wordmark-image about-brand-mobile"
+                />
               </a>
               <nav className="menu">
                 <a href="/" className={navClass('#home')}>Home</a>
-                <div className={`menu-item-with-submenu ${serviceNavClass()}`}>
-                  <a
-                    href="/services/project-management"
-                    className={serviceNavClass()}
-                    onClick={(event) => {
-                      event.preventDefault()
-                      navigateToServices()
-                    }}
-                  >
-                    Services
-                  </a>
-                  <div className="menu-submenu">
-                    {serviceCards.map((service) => (
-                      <a
-                        key={`about-page-nav-service-${service.id}`}
-                        href={service.href}
-                        className={normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}
-                      >
-                        {service.title}
-                      </a>
-                    ))}
-                  </div>
-                </div>
+                <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                 <a href="/projects" className={projectNavClass()}>Projects</a>
                 <a href="/about-us" className={aboutNavClass()}>About us</a>
+                <a href="/contact-us" className={contactNavClass()}>Contact us</a>
               </nav>
               <button
                 className="menu-toggle"
@@ -853,16 +858,7 @@ function App() {
             <button className="call-btn" onClick={navigateToContact}>
               Get in touch
               <span className="call-btn-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path
-                    d="M7 17L17 7M9 7h8v8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <UpRightArrowIcon />
               </span>
             </button>
           </header>
@@ -883,29 +879,18 @@ function App() {
               <a
                 href="/services/project-management"
                 className={serviceNavClass()}
-                onClick={(event) => {
-                  event.preventDefault()
-                  navigateToServices()
-                  setIsMobileMenuOpen(false)
-                }}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 Services
               </a>
-              {serviceCards.map((service) => (
-                <a
-                  key={`about-page-mobile-nav-service-${service.id}`}
-                  href={service.href}
-                  className={`mobile-sub-link ${normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {service.title}
-                </a>
-              ))}
               <a href="/projects" className={projectNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                 Projects
               </a>
               <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                 About us
+              </a>
+              <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
+                Contact us
               </a>
             </nav>
             <button
@@ -919,15 +904,154 @@ function App() {
           </aside>
           <div className="about-page-hero-content">
             <p className="eyebrow">{siteContent.branding.hero_eyebrow}</p>
-            <h1>{siteContent.branding.hero_title}</h1>
+            <h1>Experience That Builds Outcomes.</h1>
             <p className="subtitle">
               {siteContent.branding.hero_subtitle}
             </p>
             <div className="cta-row">
               <a className="primary" href="/services/project-management">
-                Our Services
+                What we do
+                <span className="about-primary-icon" aria-hidden="true">
+                  <UpRightArrowIcon />
+                </span>
               </a>
             </div>
+          </div>
+        </section>
+        <section className="about-services-section" aria-label="About page services">
+          <header className="about-services-header">
+            <h2>{siteContent.branding.services_title}</h2>
+            <p>{siteContent.branding.services_description}</p>
+          </header>
+          <div className="about-services-cards-viewport">
+            <div
+              className="about-services-cards-track"
+              style={
+                {
+                  '--about-slide-offset': aboutServicesIndex,
+                  '--about-visible-cards': aboutVisibleCards,
+                } as CSSProperties
+              }
+            >
+              {aboutServiceCards.map((card) => (
+                <article className="about-service-card" key={card.id}>
+                  <div
+                    className="about-service-card-media"
+                    style={
+                      card.image_url
+                        ? ({
+                            backgroundImage: `linear-gradient(180deg, rgba(7, 16, 27, 0.08), rgba(7, 16, 27, 0.8)), url("${card.image_url}")`,
+                            backgroundSize: 'auto, cover',
+                            backgroundPosition: 'center, center',
+                            backgroundRepeat: 'no-repeat, no-repeat',
+                          } as CSSProperties)
+                        : undefined
+                    }
+                    aria-hidden="true"
+                  />
+                  <div className="about-service-card-content">
+                    <h3>{card.title}</h3>
+                    <p>{card.description}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+          <div className="services-showcase-dots" role="tablist" aria-label="About services navigation">
+            {Array.from({ length: aboutMaxSlideIndex + 1 }).map((_, index) => (
+              <button
+                key={`about-service-dot-${index}`}
+                type="button"
+                className={`services-showcase-dot ${aboutServicesIndex === index ? 'active' : ''}`}
+                onClick={() => setAboutServicesIndex(index)}
+                aria-label={`Show services slide ${index + 1}`}
+                aria-selected={aboutServicesIndex === index}
+              />
+            ))}
+          </div>
+        </section>
+        <section className="about-team-section" aria-label="Our team">
+          <header className="about-team-header">
+            <div className="about-team-heading-row">
+              <div className="about-team-heading-left">
+                <img
+                  src={siteContent.branding.favicon_url || '/SYNERGY logo.png'}
+                  alt={`${siteContent.branding.company_name} favicon`}
+                  className="about-team-favicon"
+                />
+                <h2>Our team</h2>
+              </div>
+              <div className="about-team-nav-arrows" aria-label="Team navigation">
+                <button
+                  type="button"
+                  className="about-team-nav-arrow"
+                  onClick={() => setAboutTeamIndex((index) => Math.max(0, index - 1))}
+                  disabled={aboutTeamIndex <= 0}
+                  aria-label="Previous team slide"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 6l-6 6 6 6" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="about-team-nav-arrow"
+                  onClick={() => setAboutTeamIndex((index) => Math.min(aboutTeamMaxSlideIndex, index + 1))}
+                  disabled={aboutTeamIndex >= aboutTeamMaxSlideIndex}
+                  aria-label="Next team slide"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <p>
+              We combine leadership, coordination, and specialist expertise to keep every program aligned, proactive,
+              and consistently delivered to the highest standard.
+            </p>
+          </header>
+          <div className="about-team-cards-viewport">
+            <div
+              className="about-team-cards-track"
+              style={
+                {
+                  '--about-team-slide-offset': aboutTeamIndex,
+                  '--about-team-visible-cards': aboutTeamVisibleCards,
+                } as CSSProperties
+              }
+            >
+              {aboutTeamMembers.map((member) => (
+                <article
+                  className="about-team-card"
+                  key={member.id}
+                >
+                  <div className="about-team-card-media">
+                    {member.avatar_url ? (
+                      <img src={member.avatar_url} alt={member.name} className="about-team-card-image" />
+                    ) : (
+                      <span className="about-team-card-fallback">{member.initials}</span>
+                    )}
+                  </div>
+                  <div className="about-team-card-meta">
+                    <h3>{member.name}</h3>
+                    <p>{member.role}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+          <div className="about-team-dots" role="tablist" aria-label="Our team navigation">
+            {Array.from({ length: aboutTeamMaxSlideIndex + 1 }).map((_, index) => (
+              <button
+                key={`about-team-dot-${index}`}
+                type="button"
+                className={`about-team-dot ${aboutTeamIndex === index ? 'active' : ''}`}
+                onClick={() => setAboutTeamIndex(index)}
+                aria-label={`Show team slide ${index + 1}`}
+                aria-selected={aboutTeamIndex === index}
+              />
+            ))}
           </div>
         </section>
       </main>
@@ -951,33 +1075,20 @@ function App() {
           <header className="top-nav contact-page-header">
             <div className="nav-bubble">
               <a className="brand" href="/">
-                <img src="/syngergy-logo.png" alt={siteContent.branding.company_name} className="brand-wordmark-image" />
+                <img
+                  src="/syngergy-logo.png"
+                  alt={siteContent.branding.company_name}
+                  className="brand-wordmark-image contact-brand-desktop"
+                />
+                <img
+                  src="/SYNERGY logo.png"
+                  alt={siteContent.branding.company_name}
+                  className="brand-wordmark-image contact-brand-mobile"
+                />
               </a>
               <nav className="menu">
                 <a href="/" className={navClass('#home')}>Home</a>
-                <div className={`menu-item-with-submenu ${serviceNavClass()}`}>
-                  <a
-                    href="/services/project-management"
-                    className={serviceNavClass()}
-                    onClick={(event) => {
-                      event.preventDefault()
-                      navigateToServices()
-                    }}
-                  >
-                    Services
-                  </a>
-                  <div className="menu-submenu">
-                    {serviceCards.map((service) => (
-                      <a
-                        key={`contact-page-nav-service-${service.id}`}
-                        href={service.href}
-                        className={normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}
-                      >
-                        {service.title}
-                      </a>
-                    ))}
-                  </div>
-                </div>
+                <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                 <a href="/projects" className={projectNavClass()}>Projects</a>
                 <a href="/about-us" className={aboutNavClass()}>About us</a>
                 <a href="/contact-us" className={contactNavClass()}>Contact us</a>
@@ -995,16 +1106,7 @@ function App() {
             <button className="call-btn" onClick={navigateToContact}>
               Get in touch
               <span className="call-btn-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path
-                    d="M7 17L17 7M9 7h8v8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <UpRightArrowIcon />
               </span>
             </button>
           </header>
@@ -1025,24 +1127,10 @@ function App() {
               <a
                 href="/services/project-management"
                 className={serviceNavClass()}
-                onClick={(event) => {
-                  event.preventDefault()
-                  navigateToServices()
-                  setIsMobileMenuOpen(false)
-                }}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 Services
               </a>
-              {serviceCards.map((service) => (
-                <a
-                  key={`contact-page-mobile-nav-service-${service.id}`}
-                  href={service.href}
-                  className={`mobile-sub-link ${normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {service.title}
-                </a>
-              ))}
               <a href="/projects" className={projectNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                 Projects
               </a>
@@ -1065,8 +1153,8 @@ function App() {
                 {siteContent.branding.hero_subtitle}
               </p>
               <div className="cta-row">
-                <a className="primary" href="/services/project-management">
-                  Our Services
+                <a className="primary contact-hero-primary" href="/about-us">
+                  Learn More
                 </a>
               </div>
             </div>
@@ -1125,109 +1213,132 @@ function App() {
   }
 
   if (activeServiceCard) {
-    const financeHeroVideoUrl = 'https://www.pexels.com/download/video/5020288/'
-    const complianceHeroVideoUrl = 'https://www.pexels.com/download/video/7804948/'
-    const hrHeroVideoUrl = 'https://www.pexels.com/download/video/6534178/'
-    const projectManagementHeroVideoUrl = 'https://www.pexels.com/download/video/5977456/'
-    const defaultServiceHeroVideoUrl = 'https://www.pexels.com/download/video/3252130/'
-    const activeServiceHref = activeServiceCard.href.toLowerCase()
-    const serviceHeroVideoUrl =
-      activeServiceHref === '/services/finance'
-        ? financeHeroVideoUrl
-        : activeServiceHref === '/services/compliance'
-          ? complianceHeroVideoUrl
-        : activeServiceHref === '/services/hr'
-          ? hrHeroVideoUrl
-          : activeServiceHref === '/services/project-management'
-            ? projectManagementHeroVideoUrl
-          : defaultServiceHeroVideoUrl
-    const detailSections = activeServiceCard.detail_sections ?? []
-    const renderedDetailSections =
-      detailSections.length > 0 ? detailSections : [{ title: 'Service Scope', points: [activeServiceCard.description] }]
+    const activeHubService = serviceCards[servicesHubIndex] ?? activeServiceCard
+    const activeHubServiceDetails = activeHubService.detail_sections?.[0]?.points?.slice(0, 3) ?? [activeHubService.description]
     return (
       <>
         <main className="services-page-shell">
-          <section className="services-page-hero">
-            <div className="services-hero-visual-frame" aria-hidden="true">
-              <div className="noise-layer" />
-              <div className="services-hero-media" />
-              <video
-                key={serviceHeroVideoUrl}
-                className="sticky-blue-wash-video services-hero-video"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-              >
-                <source src={serviceHeroVideoUrl} type="video/mp4" />
-              </video>
-            </div>
-            <header className={`top-nav service-page-header ${showServiceMobileHeader ? '' : 'mobile-scroll-hidden'}`}>
-              <div className="nav-bubble">
-                <a className="brand" href="/">
-                  <img src="/SYNERGY logo.png" alt={siteContent.branding.company_name} className="brand-wordmark-image" />
-                </a>
-                <nav className="menu">
-                  <a href="/" className={navClass('#home')}>Home</a>
-                  <div className={`menu-item-with-submenu ${serviceNavClass()}`}>
-                    <a
-                      href="#"
-                      className={serviceNavClass()}
-                      onClick={(event) => {
-                        event.preventDefault()
-                      }}
-                    >
-                      Services
-                    </a>
-                    <div className="menu-submenu">
-                      {serviceCards.map((service) => (
-                        <a
-                          key={`detail-nav-service-${service.id}`}
-                          href={service.href}
-                          className={normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}
-                        >
-                          {service.title}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                  <a href="/projects" className={projectNavClass()}>Projects</a>
-                  <a href="/about-us" className={aboutNavClass()}>About us</a>
-                </nav>
-                <button
-                  className="menu-toggle"
-                  onClick={() => setIsMobileMenuOpen((open) => !open)}
-                  aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-                  aria-expanded={isMobileMenuOpen}
-                  aria-controls="mobile-nav-drawer"
-                >
-                  {isMobileMenuOpen ? 'Close' : 'Menu'}
-                </button>
+          <section className="services-hub-section">
+            <div className="services-hub-left">
+              <header className="services-hub-header">
+                <div className="services-hub-menu-bubble">
+                  <a className="brand" href="/">
+                    <img src="/SYNERGY logo.png" alt={siteContent.branding.company_name} className="brand-wordmark-image" />
+                  </a>
+                  <nav className="services-hub-inline-nav">
+                    <a href="/" className={navClass('#home')}>Home</a>
+                    <a href="/services/project-management" className={serviceNavClass()}>Services</a>
+                    <a href="/projects" className={projectNavClass()}>Projects</a>
+                    <a href="/about-us" className={aboutNavClass()}>About us</a>
+                    <a href="/contact-us" className={contactNavClass()}>Contact us</a>
+                  </nav>
+                  <button
+                    className="menu-toggle"
+                    onClick={() => setIsMobileMenuOpen((open) => !open)}
+                    aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+                    aria-expanded={isMobileMenuOpen}
+                    aria-controls="mobile-nav-drawer"
+                  >
+                    {isMobileMenuOpen ? 'Close' : 'Menu'}
+                  </button>
+                </div>
+              </header>
+              <div className="services-hub-content">
+                <h1>Unleash Strategic Control Across Every Department</h1>
+                <p>
+                  Explore Synergy&apos;s integrated service ecosystem, built to align finance, compliance, HR, and
+                  project execution into one reliable growth engine.
+                </p>
+                <div className="services-hub-nav-arrows" aria-label="Services navigation">
+                  <button
+                    type="button"
+                    className="services-hub-nav-arrow"
+                    onClick={() => setServicesHubIndex((index) => Math.max(0, index - 1))}
+                    disabled={servicesHubIndex <= 0}
+                    aria-label="Previous service"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M15 6l-6 6 6 6" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="services-hub-nav-arrow"
+                    onClick={() => setServicesHubIndex((index) => Math.min(serviceCards.length - 1, index + 1))}
+                    disabled={servicesHubIndex >= serviceCards.length - 1}
+                    aria-label="Next service"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M9 6l6 6-6 6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <a
-                className="call-btn service-back-btn"
-                href="/contact-us"
-                onClick={(event) => {
-                  event.preventDefault()
-                  navigateToContact()
-                }}
-              >
-                Get in touch
-                <span className="call-btn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path
-                      d="M7 17L17 7M9 7h8v8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+              <div className="services-hub-cards-viewport" ref={servicesHubTrackRef}>
+                {serviceCards.map((service, index) => (
+                  <article
+                    key={`services-hub-card-${service.id}`}
+                    className={`services-hub-card ${servicesHubIndex === index ? 'active' : ''}`}
+                    ref={(element) => {
+                      servicesHubCardRefs.current[index] = element
+                    }}
+                    onClick={() => setServicesHubIndex(index)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setServicesHubIndex(index)
+                      }
+                    }}
+                  >
+                    <div
+                      className="services-hub-card-media"
+                      style={service.image_url ? ({ backgroundImage: `url("${service.image_url}")` } as CSSProperties) : undefined}
+                      aria-hidden="true"
                     />
-                  </svg>
-                </span>
-              </a>
-            </header>
+                    <div className="services-hub-card-overlay">
+                      <h3>{service.title}</h3>
+                      <p>{service.description}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+            <aside className="services-hub-right" aria-label="Active service preview">
+              <article
+                key={activeHubService.id}
+                className="services-hub-preview"
+                style={
+                  activeHubService.image_url
+                    ? ({
+                        backgroundImage: `linear-gradient(180deg, rgba(7, 12, 20, 0.06), rgba(7, 12, 20, 0.92)), url("${activeHubService.image_url}")`,
+                        backgroundSize: 'auto, cover',
+                        backgroundPosition: 'center, center',
+                        backgroundRepeat: 'no-repeat, no-repeat',
+                      } as CSSProperties)
+                    : undefined
+                }
+              >
+                <button
+                  type="button"
+                  className="services-hub-preview-arrow"
+                  aria-label={`Open ${activeHubService.title}`}
+                  onClick={() => navigateWithTransition(activeHubService.href)}
+                >
+                  <UpRightArrowIcon />
+                </button>
+                <div className="services-hub-preview-content">
+                  <h2>{activeHubService.title}</h2>
+                  <p>{activeHubService.description}</p>
+                  <ul>
+                    {activeHubServiceDetails.map((point) => (
+                      <li key={`${activeHubService.id}-${point}`}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            </aside>
             <div
               className={`mobile-menu-overlay ${isMobileMenuOpen ? 'open' : ''}`}
               onClick={() => setIsMobileMenuOpen(false)}
@@ -1243,30 +1354,20 @@ function App() {
                   Home
                 </a>
                 <a
-                  href="#"
+                  href="/services/project-management"
                   className={serviceNavClass()}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setIsMobileMenuOpen(false)
-                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Services
                 </a>
-                {serviceCards.map((service) => (
-                  <a
-                    key={`service-page-mobile-nav-service-${service.id}`}
-                    href={service.href}
-                    className={`mobile-sub-link ${normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {service.title}
-                  </a>
-                ))}
                 <a href="/projects" className={projectNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                   Projects
                 </a>
                 <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
                   About us
+                </a>
+                <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
+                  Contact us
                 </a>
               </nav>
               <button
@@ -1278,40 +1379,8 @@ function App() {
                 Get in touch
               </button>
             </aside>
-            <div className="services-page-hero-content">
-              <p className="services-page-kicker">Synergy PM Services</p>
-              <h1>{activeServiceCard.title}</h1>
-              <p className="services-page-lead">{activeServiceCard.description}</p>
-            </div>
-          </section>
-
-          <section ref={serviceDetailSceneRef} className="services-detail-scene">
-            <div className="services-detail-sticky">
-              <div className="services-detail-viewport">
-                <div className="services-detail-track">
-                  {renderedDetailSections.map((section, index) => (
-                  <article
-                    key={`${section.title}-${index}`}
-                    className="services-detail-card"
-                  >
-                    <div className="services-detail-head">
-                      <p className="services-detail-tag">{activeServiceCard.tag}</p>
-                      <span className="services-detail-index">{String(index + 1).padStart(2, '0')}</span>
-                    </div>
-                    <h2>{section.title}</h2>
-                    <ul>
-                      {section.points.map((point) => (
-                        <li key={point}>{point}</li>
-                      ))}
-                    </ul>
-                  </article>
-                  ))}
-                </div>
-              </div>
-            </div>
           </section>
         </main>
-        {isMobileViewport ? sharedFooterSection : null}
       </>
     )
   }
@@ -1322,35 +1391,14 @@ function App() {
         <header className="top-nav top-nav-global return-visible returning-header">
           <div className="nav-bubble">
             <a className="brand" href="/">
-              <img src="/SYNERGY logo.png" alt="Synergy PM" className="brand-wordmark-image" />
+              <img src="/SYNERGY logo.png" alt="Synergy Project Management" className="brand-wordmark-image" />
             </a>
             <nav className="menu">
               <a href="/" className={navClass('#home')}>Home</a>
-              <div className={`menu-item-with-submenu ${serviceNavClass()}`}>
-                <a
-                  href="/services/project-management"
-                  className={serviceNavClass()}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    navigateToServices()
-                  }}
-                >
-                  Services
-                </a>
-                <div className="menu-submenu">
-                  {serviceCards.map((service) => (
-                    <a
-                      key={`global-nav-service-${service.id}`}
-                      href={service.href}
-                      className={normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}
-                    >
-                      {service.title}
-                    </a>
-                  ))}
-                </div>
-              </div>
+              <a href="/services/project-management" className={serviceNavClass()}>Services</a>
               <a href="/projects" className={projectNavClass()}>Projects</a>
               <a href="/about-us" className={aboutNavClass()}>About us</a>
+              <a href="/contact-us" className={contactNavClass()}>Contact us</a>
             </nav>
             <button
               className="menu-toggle"
@@ -1364,16 +1412,7 @@ function App() {
             <button className="call-btn" onClick={navigateToContact}>
               Get in touch
               <span className="call-btn-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path
-                    d="M7 17L17 7M9 7h8v8"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <UpRightArrowIcon />
               </span>
             </button>
           </div>
@@ -1397,29 +1436,18 @@ function App() {
           <a
             href="/services/project-management"
             className={serviceNavClass()}
-            onClick={(event) => {
-              event.preventDefault()
-              navigateToServices()
-              setIsMobileMenuOpen(false)
-            }}
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             Services
           </a>
-          {serviceCards.map((service) => (
-            <a
-              key={`mobile-nav-service-${service.id}`}
-              href={service.href}
-              className={`mobile-sub-link ${normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              {service.title}
-            </a>
-          ))}
           <a href="/projects" className={projectNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
             Projects
           </a>
           <a href="/about-us" className={aboutNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
             About us
+          </a>
+          <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>
+            Contact us
           </a>
         </nav>
         <button
@@ -1456,30 +1484,10 @@ function App() {
                 </a>
                 <nav className="menu">
                   <a href="/" className={navClass('#home')}>Home</a>
-                  <div className={`menu-item-with-submenu ${serviceNavClass()}`}>
-                    <a
-                      href="#"
-                      className={serviceNavClass()}
-                      onClick={(event) => {
-                        event.preventDefault()
-                      }}
-                    >
-                      Services
-                    </a>
-                    <div className="menu-submenu">
-                      {serviceCards.map((service) => (
-                        <a
-                          key={`hero-nav-service-${service.id}`}
-                          href={service.href}
-                          className={normalizedActiveRoute === service.href.toLowerCase() ? 'active' : ''}
-                        >
-                          {service.title}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
+                  <a href="/services/project-management" className={serviceNavClass()}>Services</a>
                   <a href="/projects" className={projectNavClass()}>Projects</a>
                   <a href="/about-us" className={aboutNavClass()}>About us</a>
+                  <a href="/contact-us" className={contactNavClass()}>Contact us</a>
                 </nav>
                 <button
                   className="menu-toggle"
@@ -1494,16 +1502,7 @@ function App() {
               <button className="call-btn" onClick={navigateToContact}>
                 Get in touch
                 <span className="call-btn-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path
-                      d="M7 17L17 7M9 7h8v8"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <UpRightArrowIcon />
                 </span>
               </button>
             </header>
@@ -1703,7 +1702,7 @@ function App() {
       <section ref={sixthSceneRef} className="sixth-section" style={sixthVars}>
         <div className="sixth-inner">
           <header className="sixth-header">
-            <p className="sixth-kicker">Synergy PM</p>
+            <p className="sixth-kicker">Synergy Project Management</p>
             <h2>{siteContent.branding.team_title}</h2>
           </header>
 
@@ -1789,8 +1788,8 @@ function App() {
               }}
             >
               Lets Partner on a Project
-              <span>
-                <PlusGlyph />
+              <span className="cta-arrow-icon" aria-hidden="true">
+                <UpRightArrowIcon />
               </span>
             </button>
           </aside>
