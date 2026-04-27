@@ -796,11 +796,15 @@ function App() {
   const navClass = (route: string) => (activeRoute === route ? 'active' : '')
   const normalizedActiveRoute = activeRoute.toLowerCase()
   const activePathname = normalizedActiveRoute.startsWith('/') ? normalizedActiveRoute : '/'
-  const isHomeRoute = activePathname === '/'
+  const isHomeRoute = activePathname === '/' || activePathname === '/index.html'
   const isServicesRoute = activePathname.startsWith('/services')
   const isProjectsRoute = activePathname === '/projects' || activePathname.startsWith('/projects/')
   const isAboutRoute = activePathname === '/about-us' || activePathname.startsWith('/about-us/')
-  const isCareersRoute = activePathname === '/careers' || activePathname.startsWith('/careers/')
+  const isCareersRoute =
+    activePathname === '/careers' ||
+    activePathname.startsWith('/careers/') ||
+    activePathname === '/career' ||
+    activePathname.startsWith('/career/')
   const isContactRoute = activePathname === '/contact-us' || activePathname.startsWith('/contact-us/')
   const serviceNavClass = () => (isServicesRoute ? 'active' : '')
   const projectNavClass = () => (isProjectsRoute ? 'active' : '')
@@ -820,8 +824,9 @@ function App() {
   const selectedCareerId = useMemo(() => {
     if (!isCareersRoute) return ''
     const pathWithoutQuery = activePathname.split('?')[0]
-    const parts = pathWithoutQuery.split('/').filter(Boolean)
-    return parts.length >= 2 ? parts[1] : ''
+    const normalizedCareerPath = pathWithoutQuery.replace(/^\/careers?\/?/i, '')
+    const [firstSegment = ''] = normalizedCareerPath.split('/').filter(Boolean)
+    return firstSegment
   }, [activePathname, isCareersRoute])
   const selectedCareerJob = useMemo(
     () => siteContent.jobs.find((job) => job.id.toLowerCase() === selectedCareerId.toLowerCase()) ?? null,
