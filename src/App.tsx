@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ComponentType, type FormEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ChangeEvent,
+  type ComponentType,
+  type FormEvent,
+} from 'react'
 import PhoneInputLib from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { AdminDashboard, type AdminPage } from './components/AdminDashboard'
@@ -235,11 +245,16 @@ function App() {
   const [contactEmail, setContactEmail] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   const [contactMessage, setContactMessage] = useState('')
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false)
+  const [contactSubmissionStatus, setContactSubmissionStatus] = useState('')
   const [jobApplicantName, setJobApplicantName] = useState('')
   const [jobApplicantEmail, setJobApplicantEmail] = useState('')
   const [jobApplicantPhone, setJobApplicantPhone] = useState('')
   const [jobApplicantNote, setJobApplicantNote] = useState('')
   const [jobApplicantCvFile, setJobApplicantCvFile] = useState<File | null>(null)
+  const [jobApplicantCvUrl, setJobApplicantCvUrl] = useState('')
+  const [isUploadingJobApplicantCv, setIsUploadingJobApplicantCv] = useState(false)
+  const [jobCvUploadProgress, setJobCvUploadProgress] = useState(0)
   const [isSubmittingJobApplication, setIsSubmittingJobApplication] = useState(false)
   const [jobApplicationStatus, setJobApplicationStatus] = useState('')
   const [showCareersReturnHeader, setShowCareersReturnHeader] = useState(false)
@@ -273,6 +288,7 @@ function App() {
   const showcaseCardRefs = useRef<Array<HTMLElement | null>>([])
   const servicesHubTrackRef = useRef<HTMLDivElement | null>(null)
   const servicesHubCardRefs = useRef<Array<HTMLElement | null>>([])
+  const careerCvInputRef = useRef<HTMLInputElement | null>(null)
   const lastScrollYRef = useRef(0)
   const careersLastScrollRef = useRef(0)
 
@@ -616,7 +632,7 @@ function App() {
     if (typeof window === 'undefined') return 'dashboard'
     const part = window.location.pathname.replace(/^\/backend\/?/, '').split('/')[0]
     if (!part) return 'dashboard'
-    if (part === 'branding' || part === 'team' || part === 'services' || part === 'insights' || part === 'media' || part === 'careers') return part
+    if (part === 'branding' || part === 'smtp' || part === 'team' || part === 'services' || part === 'insights' || part === 'media' || part === 'careers') return part
     return 'dashboard'
   })()
   const homepageTeam = siteContent.team.slice(0, 6)
@@ -875,6 +891,45 @@ function App() {
     navigateWithTransition('/contact-us')
     setIsMobileMenuOpen(false)
   }
+  const uploadJobApplicantCv = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null
+    setJobApplicantCvFile(file)
+    setJobApplicantCvUrl('')
+    setJobCvUploadProgress(0)
+    if (!file) return
+
+    const maxCvFileSizeBytes = 10 * 1024 * 1024
+    const allowedCvFormats = ['pdf', 'doc', 'docx']
+    const selectedCvExt = file.name.split('.').pop()?.toLowerCase() ?? ''
+    if (!allowedCvFormats.includes(selectedCvExt)) {
+      setJobApplicantCvFile(null)
+      setJobApplicationStatus('Please upload a CV in PDF, DOC, or DOCX format.')
+      return
+    }
+    if (file.size > maxCvFileSizeBytes) {
+      setJobApplicantCvFile(null)
+      setJobApplicationStatus('CV file size must be 10MB or less.')
+      return
+    }
+
+    setJobApplicationStatus('')
+    setIsUploadingJobApplicantCv(true)
+    try {
+      const uploadedCv = await contentApi.uploadMedia(file, 'career-cv', (percent) => {
+        setJobCvUploadProgress(percent)
+      })
+      setJobApplicantCvUrl(uploadedCv.publicUrl)
+      setJobCvUploadProgress(100)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'CV upload failed.'
+      setJobApplicationStatus(message)
+      setJobApplicantCvUrl('')
+      setJobCvUploadProgress(0)
+    } finally {
+      setIsUploadingJobApplicantCv(false)
+    }
+  }
+
   const submitJobApplication = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!selectedCareerJob) return
@@ -882,17 +937,27 @@ function App() {
       setJobApplicationStatus('Please upload your CV before submitting.')
       return
     }
+    if (isUploadingJobApplicantCv) {
+      setJobApplicationStatus('CV upload is in progress. Please wait for it to finish.')
+      return
+    }
+    if (!jobApplicantCvUrl) {
+      setJobApplicationStatus('CV upload failed or is missing. Please re-upload your CV.')
+      return
+    }
     setIsSubmittingJobApplication(true)
     setJobApplicationStatus('')
     try {
-      const uploadedCv = await contentApi.uploadMedia(jobApplicantCvFile, 'career-cv')
       await contentApi.submitJobApplication({
         job_id: selectedCareerJob.id,
+        job_title: selectedCareerJob.title,
+        job_department: selectedCareerJob.department,
+        notification_email: selectedCareerJob.notification_email ?? undefined,
         full_name: jobApplicantName.trim(),
         email: jobApplicantEmail.trim(),
         phone: jobApplicantPhone.trim(),
         cover_note: jobApplicantNote.trim(),
-        cv_url: uploadedCv.publicUrl,
+        cv_url: jobApplicantCvUrl,
       })
       setJobApplicationStatus('Application sent successfully. Our team will contact you shortly.')
       setJobApplicantName('')
@@ -900,11 +965,44 @@ function App() {
       setJobApplicantPhone('')
       setJobApplicantNote('')
       setJobApplicantCvFile(null)
+      setJobApplicantCvUrl('')
+      setJobCvUploadProgress(0)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to submit application.'
       setJobApplicationStatus(message)
     } finally {
       setIsSubmittingJobApplication(false)
+    }
+  }
+  const submitContactInquiry = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const fullName = contactName.trim()
+    const email = contactEmail.trim()
+    const phone = contactPhone.trim()
+    const message = contactMessage.trim()
+    if (!fullName || !email || !phone || !message) {
+      setContactSubmissionStatus('Please complete all contact fields before submitting.')
+      return
+    }
+    setIsSubmittingContact(true)
+    setContactSubmissionStatus('')
+    try {
+      await contentApi.submitContactInquiry({
+        full_name: fullName,
+        email,
+        phone,
+        message,
+      })
+      setContactSubmissionStatus('Message sent successfully. We will contact you shortly.')
+      setContactName('')
+      setContactEmail('')
+      setContactPhone('')
+      setContactMessage('')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to send contact message.'
+      setContactSubmissionStatus(message)
+    } finally {
+      setIsSubmittingContact(false)
     }
   }
   const activeServiceCard =
@@ -1571,9 +1669,7 @@ function App() {
             <aside className="contact-page-phone-panel" aria-label="Contact phone">
               <form
                 className="contact-page-form"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                }}
+                onSubmit={submitContactInquiry}
               >
                 <input
                   type="text"
@@ -1613,12 +1709,13 @@ function App() {
                   rows={6}
                   required
                 />
-                <button type="submit" className="contact-page-form-submit">
-                  <span>Send message</span>
+                <button type="submit" className="contact-page-form-submit" disabled={isSubmittingContact}>
+                  <span>{isSubmittingContact ? 'Sending...' : 'Send message'}</span>
                   <span className="call-btn-icon" aria-hidden="true">
                     <UpRightArrowIcon />
                   </span>
                 </button>
+                {contactSubmissionStatus ? <p className="career-apply-status">{contactSubmissionStatus}</p> : null}
               </form>
             </aside>
           </div>
@@ -1737,83 +1834,140 @@ function App() {
           <div className="careers-page-content">
             {isCareerDetailRoute && selectedCareerJob ? (
               <section className="career-detail-shell">
-                <a className="career-back-link entrance-seq entrance-1" href="/careers">
-                  Back to careers
-                </a>
-                <p className="careers-hiring-pill entrance-seq entrance-2">{selectedCareerJob.department}</p>
-                <h1 className="entrance-seq entrance-2">{selectedCareerJob.title}</h1>
-                {selectedCareerJob.job_description_html ? (
-                  <div
-                    className="career-job-description-html entrance-seq entrance-3"
-                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(selectedCareerJob.job_description_html) }}
-                  />
-                ) : (
-                  <p className="entrance-seq entrance-3">{selectedCareerJob.summary}</p>
-                )}
-                <div className="career-job-meta entrance-seq entrance-3">
-                  <span className="career-meta-pill career-meta-pill-location">
-                    {selectedCareerJob.location_label || selectedCareerJob.workplace_type || 'Remote'}
-                  </span>
-                  <span
-                    className={`career-meta-pill career-meta-pill-employment ${
-                      (selectedCareerJob.employment_type || '').toLowerCase().includes('full-time') ? 'is-fulltime' : ''
-                    }`}
-                  >
-                    {selectedCareerJob.employment_type || 'Full-time'}
-                  </span>
-                </div>
-                <form className="career-apply-form entrance-seq entrance-4" onSubmit={submitJobApplication}>
-                  <h2>Apply for this role</h2>
-                  <div className="career-apply-grid">
-                    <input
-                      type="text"
-                      placeholder="Full name"
-                      value={jobApplicantName}
-                      onChange={(event) => setJobApplicantName(event.target.value)}
-                      required
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email address"
-                      value={jobApplicantEmail}
-                      onChange={(event) => setJobApplicantEmail(event.target.value)}
-                      required
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Phone number"
-                      value={jobApplicantPhone}
-                      onChange={(event) => setJobApplicantPhone(event.target.value)}
-                    />
-                    <label className="career-file-upload">
-                      <span>{jobApplicantCvFile ? jobApplicantCvFile.name : 'Upload CV (PDF or DOCX)'}</span>
-                      <input
-                        key={jobApplicantCvFile?.name ?? 'no-cv-selected'}
-                        type="file"
-                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        onChange={(event) => {
-                          const file = event.target.files?.[0] ?? null
-                          setJobApplicantCvFile(file)
-                        }}
-                        required
+                <div className="career-detail-layout">
+                  <div className="career-detail-content">
+                    <div className="career-detail-top-row">
+                      <a className="career-back-link entrance-seq entrance-1" href="/careers">
+                        <span className="career-back-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24">
+                            <path d="M16 16L8 8M14 8H8v6" />
+                          </svg>
+                        </span>
+                        Back to careers
+                      </a>
+                      <p className="careers-hiring-pill entrance-seq entrance-2">{selectedCareerJob.department}</p>
+                    </div>
+                    <h1 className="entrance-seq entrance-2">{selectedCareerJob.title}</h1>
+                    {selectedCareerJob.job_description_html ? (
+                      <div
+                        className="career-job-description-html entrance-seq entrance-3"
+                        dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(selectedCareerJob.job_description_html) }}
                       />
-                    </label>
-                    <textarea
-                      placeholder="Tell us why you're a great fit"
-                      rows={6}
-                      value={jobApplicantNote}
-                      onChange={(event) => setJobApplicantNote(event.target.value)}
-                      required
-                    />
+                    ) : (
+                      <p className="entrance-seq entrance-3">{selectedCareerJob.summary}</p>
+                    )}
+                    <div className="career-job-meta entrance-seq entrance-3">
+                      <span className="career-meta-pill career-meta-pill-location">
+                        {selectedCareerJob.location_label || selectedCareerJob.workplace_type || 'Remote'}
+                      </span>
+                      <span
+                        className={`career-meta-pill career-meta-pill-employment ${
+                          (selectedCareerJob.employment_type || '').toLowerCase().includes('full-time') ? 'is-fulltime' : ''
+                        }`}
+                      >
+                        {selectedCareerJob.employment_type || 'Full-time'}
+                      </span>
+                    </div>
                   </div>
-                  {jobApplicationStatus ? <p className="career-apply-status">{jobApplicationStatus}</p> : null}
-                  <button className="career-apply-submit" type="submit" disabled={isSubmittingJobApplication}>
-                    {isSubmittingJobApplication ? 'Submitting...' : 'Submit application'}
-                    <span className="call-btn-icon" aria-hidden="true">
-                      <UpRightArrowIcon />
-                    </span>
-                  </button>
-                </form>
+                  <div className="career-detail-form-column">
+                    <form className="career-apply-form entrance-seq entrance-4" onSubmit={submitJobApplication}>
+                      <h2>Apply for this role</h2>
+                      <div className="career-apply-grid">
+                        <input
+                          type="text"
+                          placeholder="Full name"
+                          value={jobApplicantName}
+                          onChange={(event) => setJobApplicantName(event.target.value)}
+                          required
+                        />
+                        <input
+                          type="email"
+                          placeholder="Email address"
+                          value={jobApplicantEmail}
+                          onChange={(event) => setJobApplicantEmail(event.target.value)}
+                          required
+                        />
+                        <input
+                          className="career-apply-input-full"
+                          type="tel"
+                          placeholder="Phone number"
+                          value={jobApplicantPhone}
+                          onChange={(event) => setJobApplicantPhone(event.target.value)}
+                        />
+                        <label className={`career-file-upload ${jobApplicantCvUrl ? 'is-uploaded' : ''}`}>
+                          <div className="career-file-upload-main">
+                            <div className="career-file-upload-meta">
+                              <span className="career-file-upload-name">
+                                {isUploadingJobApplicantCv && jobApplicantCvFile
+                                  ? `Uploading ${jobApplicantCvFile.name} (${Math.max(0, Math.min(100, jobCvUploadProgress))}%)`
+                                  : jobApplicantCvFile && jobApplicantCvUrl
+                                    ? `${jobApplicantCvFile.name}`
+                                    : jobApplicantCvFile
+                                      ? `${jobApplicantCvFile.name}`
+                                      : 'Upload CV (PDF or DOCX)'}
+                              </span>
+                              <small>PDF, DOC, DOCX up to 10MB</small>
+                            </div>
+                            <button
+                              type="button"
+                              className="career-file-upload-btn"
+                              onClick={() => careerCvInputRef.current?.click()}
+                              disabled={isSubmittingJobApplication || isUploadingJobApplicantCv}
+                            >
+                              {jobApplicantCvUrl ? 'Replace file' : 'Choose file'}
+                            </button>
+                          </div>
+                          {isUploadingJobApplicantCv ? (
+                            <div className="career-upload-progress-inline" aria-live="polite">
+                              Uploading... {Math.max(0, Math.min(100, jobCvUploadProgress))}%
+                            </div>
+                          ) : null}
+                          <input
+                            ref={careerCvInputRef}
+                            type="file"
+                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            onChange={uploadJobApplicantCv}
+                            onClick={(event) => {
+                              event.currentTarget.value = ''
+                            }}
+                            disabled={isSubmittingJobApplication || isUploadingJobApplicantCv}
+                          />
+                          {isUploadingJobApplicantCv ? (
+                            <div className="career-upload-progress-field" aria-live="polite">
+                              <span
+                                className="career-upload-progress-fill"
+                                style={{ width: `${Math.max(0, Math.min(100, jobCvUploadProgress))}%` }}
+                              />
+                            </div>
+                          ) : null}
+                          {jobApplicantCvUrl ? (
+                            <div className="career-upload-success-row" aria-live="polite">
+                              <span className="career-upload-badge">Uploaded</span>
+                            </div>
+                          ) : null}
+                        </label>
+                        <textarea
+                          placeholder="Tell us why you're a great fit"
+                          rows={6}
+                          value={jobApplicantNote}
+                          onChange={(event) => setJobApplicantNote(event.target.value)}
+                          required
+                        />
+                      </div>
+                      {jobApplicationStatus ? <p className="career-apply-status">{jobApplicationStatus}</p> : null}
+                      <button
+                        className="career-apply-submit"
+                        type="submit"
+                        disabled={isSubmittingJobApplication || isUploadingJobApplicantCv}
+                      >
+                        {isSubmittingJobApplication ? 'Submitting...' : 'Submit application'}
+                        <span className="call-btn-icon" aria-hidden="true">
+                          <UpRightArrowIcon />
+                        </span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
               </section>
             ) : (
               <>

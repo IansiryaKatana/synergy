@@ -16,6 +16,7 @@ import {
   type JobPost,
   type MediaItem,
   type ServiceItem,
+  type SmtpSettings,
   type TeamMember,
 } from '../lib/content'
 
@@ -32,7 +33,7 @@ type AdminProps = {
   onRefresh: () => Promise<void>
 }
 
-export type AdminPage = 'dashboard' | 'branding' | 'team' | 'services' | 'insights' | 'media' | 'careers'
+export type AdminPage = 'dashboard' | 'branding' | 'smtp' | 'team' | 'services' | 'insights' | 'media' | 'careers'
 
 type SidebarItem = {
   id: AdminPage
@@ -52,6 +53,7 @@ const PAGE_TO_ENTITY: Partial<Record<AdminPage, EntityType>> = {
 const SIDEBAR_ITEMS: SidebarItem[] = [
   { id: 'dashboard', label: 'Dashboard', href: '/backend', icon: LayoutGrid },
   { id: 'branding', label: 'Branding', href: '/backend/branding', icon: Palette },
+  { id: 'smtp', label: 'SMTP Secrets', href: '/backend/smtp', icon: Globe },
   { id: 'team', label: 'Team', href: '/backend/team', icon: Users },
   { id: 'services', label: 'Services', href: '/backend/services', icon: Briefcase },
   { id: 'insights', label: 'Projects', href: '/backend/insights', icon: ChartNoAxesColumn },
@@ -84,6 +86,15 @@ export function AdminDashboard(props: AdminProps) {
   const [brandingForm, setBrandingForm] = useState<Record<string, string | number | boolean>>(
     props.branding as unknown as Record<string, string | number | boolean>,
   )
+  const [smtpForm, setSmtpForm] = useState<SmtpSettings>({
+    smtp_host: '',
+    smtp_port: 587,
+    smtp_user: '',
+    smtp_from: '',
+    smtp_pass: '',
+    has_password: false,
+  })
+  const [smtpStatus, setSmtpStatus] = useState('')
 
   const rows = useMemo(() => {
     if (entity === 'team_members') return props.team
@@ -264,6 +275,27 @@ export function AdminDashboard(props: AdminProps) {
     setBrandingForm(props.branding as unknown as Record<string, string | number | boolean>)
   }, [props.branding])
 
+  useEffect(() => {
+    const loadSmtp = async () => {
+      if (props.page !== 'smtp') return
+      try {
+        const next = await contentApi.getSmtpSettings()
+        setSmtpForm({
+          smtp_host: next.smtp_host ?? '',
+          smtp_port: Number(next.smtp_port ?? 587),
+          smtp_user: next.smtp_user ?? '',
+          smtp_from: next.smtp_from ?? '',
+          smtp_pass: '',
+          has_password: Boolean(next.has_password),
+        })
+        setSmtpStatus('')
+      } catch (err) {
+        setSmtpStatus(err instanceof Error ? err.message : 'Failed to load SMTP settings.')
+      }
+    }
+    void loadSmtp()
+  }, [props.page])
+
   const pickMedia = (url: string) => {
     setSelectedMediaUrl(url)
   }
@@ -321,6 +353,24 @@ export function AdminDashboard(props: AdminProps) {
       await props.onRefresh()
     } catch (err) {
       setStatus(err instanceof Error ? err.message : 'Failed to save branding.')
+    }
+    setSaving(false)
+  }
+
+  const saveSmtp = async () => {
+    setSaving(true)
+    try {
+      await contentApi.saveSmtpSettings({
+        smtp_host: String(smtpForm.smtp_host ?? '').trim(),
+        smtp_port: Number(smtpForm.smtp_port ?? 587),
+        smtp_user: String(smtpForm.smtp_user ?? '').trim(),
+        smtp_from: String(smtpForm.smtp_from ?? '').trim(),
+        smtp_pass: String(smtpForm.smtp_pass ?? '').trim(),
+      })
+      setSmtpForm((prev) => ({ ...prev, smtp_pass: '', has_password: true }))
+      setSmtpStatus('SMTP settings saved.')
+    } catch (err) {
+      setSmtpStatus(err instanceof Error ? err.message : 'Failed to save SMTP settings.')
     }
     setSaving(false)
   }
@@ -453,7 +503,62 @@ export function AdminDashboard(props: AdminProps) {
           </section>
         ) : null}
 
-        {props.page !== 'dashboard' && props.page !== 'branding' ? (
+        {props.page === 'smtp' ? (
+          <section className="admin-branding">
+            <h2>SMTP Secrets (Rackspace)</h2>
+            <div className="admin-form-grid">
+              <label>
+                smtp_host
+                <input
+                  value={String(smtpForm.smtp_host ?? '')}
+                  onChange={(event) => setSmtpForm((prev) => ({ ...prev, smtp_host: event.target.value }))}
+                  placeholder="secure.emailsrvr.com"
+                />
+              </label>
+              <label>
+                smtp_port
+                <input
+                  type="number"
+                  value={Number(smtpForm.smtp_port ?? 587)}
+                  onChange={(event) =>
+                    setSmtpForm((prev) => ({ ...prev, smtp_port: Number(event.target.value || 587) }))
+                  }
+                />
+              </label>
+              <label>
+                smtp_user
+                <input
+                  value={String(smtpForm.smtp_user ?? '')}
+                  onChange={(event) => setSmtpForm((prev) => ({ ...prev, smtp_user: event.target.value }))}
+                  placeholder="careers@yourdomain.com"
+                />
+              </label>
+              <label>
+                smtp_from
+                <input
+                  value={String(smtpForm.smtp_from ?? '')}
+                  onChange={(event) => setSmtpForm((prev) => ({ ...prev, smtp_from: event.target.value }))}
+                  placeholder="careers@yourdomain.com"
+                />
+              </label>
+              <label>
+                smtp_pass
+                <input
+                  type="password"
+                  value={String(smtpForm.smtp_pass ?? '')}
+                  onChange={(event) => setSmtpForm((prev) => ({ ...prev, smtp_pass: event.target.value }))}
+                  placeholder={smtpForm.has_password ? 'Saved (leave blank to keep unchanged)' : 'Enter SMTP password'}
+                />
+              </label>
+              <button className="admin-btn admin-btn-primary" disabled={saving} onClick={saveSmtp}>
+                Save SMTP Settings
+              </button>
+              {smtpStatus ? <p className="admin-status">{smtpStatus}</p> : null}
+            </div>
+          </section>
+        ) : null}
+
+        {props.page !== 'dashboard' && props.page !== 'branding' && props.page !== 'smtp' ? (
           <>
             <section className="admin-controls">
               <div className="admin-controls-top">
@@ -775,7 +880,7 @@ function defaultForm(entity: EntityType): Record<string, unknown> {
   if (entity === 'team_members') return { ...base, initials: '', name: '', role: '', bio: '', email: '', number: '', avatar_url: '' }
   if (entity === 'services') return { ...base, tag: '', title: '', description: '', quote: '', image_url: '', detail_sections: '[]' }
   if (entity === 'insights') return { ...base, chip: '', date_label: '', title: '', alt_style: false, image_url: '' }
-  if (entity === 'job_posts') return { ...base, title: '', department: '', summary: '', job_description_html: '', location_label: '', employment_type: '', workplace_type: '', apply_url: '' }
+  if (entity === 'job_posts') return { ...base, title: '', department: '', summary: '', job_description_html: '', notification_email: '', location_label: '', employment_type: '', workplace_type: '', apply_url: '' }
   return { ...base, kind: 'asset', label: '', value: '', link_url: '', file_path: '', file_url: '' }
 }
 
@@ -825,7 +930,7 @@ function renderFields(
     team_members: ['avatar_url', 'id', 'initials', 'name', 'role', 'bio', 'email', 'number', 'sort_order', 'is_active'],
     services: ['image_url', 'id', 'tag', 'title', 'description', 'quote', 'sort_order', 'is_active'],
     insights: ['image_url', 'id', 'chip', 'date_label', 'title', 'alt_style', 'sort_order', 'is_active'],
-    job_posts: ['id', 'title', 'department', 'summary', 'job_description_html', 'location_label', 'employment_type', 'workplace_type', 'apply_url', 'sort_order', 'is_active'],
+    job_posts: ['id', 'title', 'department', 'summary', 'job_description_html', 'notification_email', 'location_label', 'employment_type', 'workplace_type', 'apply_url', 'sort_order', 'is_active'],
     media_items: ['value', 'link_url', 'id', 'kind', 'label', 'file_path', 'file_url', 'sort_order', 'is_active'],
   }
   return (

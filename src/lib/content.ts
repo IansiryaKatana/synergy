@@ -57,6 +57,7 @@ export type JobPost = {
   department: string
   summary: string
   job_description_html?: string | null
+  notification_email?: string | null
   location_label: string
   employment_type: string
   workplace_type: string
@@ -67,11 +68,30 @@ export type JobPost = {
 
 export type JobApplicationInput = {
   job_id: string
+  job_title?: string
+  job_department?: string
+  notification_email?: string
   full_name: string
   email: string
   phone?: string
   cover_note?: string
   cv_url?: string
+}
+
+export type ContactInquiryInput = {
+  full_name: string
+  email: string
+  phone: string
+  message: string
+}
+
+export type SmtpSettings = {
+  smtp_host: string
+  smtp_port: number
+  smtp_user: string
+  smtp_from: string
+  smtp_pass?: string
+  has_password?: boolean
 }
 
 export type BrandingContent = {
@@ -305,6 +325,7 @@ const fallback: SiteContent = {
       department: 'Design',
       summary: 'We are looking for a mid-level product designer to join our team.',
       job_description_html: '',
+      notification_email: null,
       location_label: '100% remote',
       employment_type: 'Full-time',
       workplace_type: 'Remote',
@@ -318,6 +339,7 @@ const fallback: SiteContent = {
       department: 'Development',
       summary: 'We are looking for an experienced engineering manager to join our team.',
       job_description_html: '',
+      notification_email: null,
       location_label: '100% remote',
       employment_type: 'Full-time',
       workplace_type: 'Remote',
@@ -331,6 +353,7 @@ const fallback: SiteContent = {
       department: 'Customer Service',
       summary: 'We are looking for a customer success manager to join our team.',
       job_description_html: '',
+      notification_email: null,
       location_label: '100% remote',
       employment_type: 'Full-time',
       workplace_type: 'Remote',
@@ -386,9 +409,44 @@ export const contentApi = {
   },
   async submitJobApplication(payload: JobApplicationInput) {
     await supabaseRest.upsert('job_applications', {
-      ...payload,
+      job_id: payload.job_id,
+      full_name: payload.full_name,
+      email: payload.email,
+      phone: payload.phone,
+      cover_note: payload.cover_note,
+      cv_url: payload.cv_url,
       submitted_at: new Date().toISOString(),
       status: 'new',
+    })
+    await supabaseRest.callFunction<{ ok: boolean }>('submission-email', {
+      type: 'job_application',
+      payload,
+    })
+  },
+  async submitContactInquiry(payload: ContactInquiryInput) {
+    await supabaseRest.upsert('contact_submissions', {
+      full_name: payload.full_name,
+      email: payload.email,
+      phone: payload.phone,
+      message: payload.message,
+      submitted_at: new Date().toISOString(),
+      status: 'new',
+    })
+    await supabaseRest.callFunction<{ ok: boolean }>('submission-email', {
+      type: 'contact_inquiry',
+      payload,
+    })
+  },
+  async getSmtpSettings(): Promise<SmtpSettings> {
+    const response = await supabaseRest.callFunction<{ ok: boolean; data: SmtpSettings }>('smtp-secrets', {
+      action: 'get',
+    })
+    return response.data
+  },
+  async saveSmtpSettings(payload: SmtpSettings) {
+    await supabaseRest.callFunction<{ ok: boolean }>('smtp-secrets', {
+      action: 'save',
+      payload,
     })
   },
   async uploadMedia(file: File, folder?: string, onProgress?: (percent: number) => void) {

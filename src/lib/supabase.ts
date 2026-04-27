@@ -39,6 +39,22 @@ async function call<T>(path: string, init: RequestInit): Promise<T> {
 }
 
 export const supabaseRest = {
+  async callFunction<T>(functionName: string, payload: Record<string, unknown>): Promise<T> {
+    if (!hasSupabaseEnv || !supabaseUrl) {
+      throw new Error('Missing Supabase env vars.')
+    }
+    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`Function call failed (${response.status}) on ${functionName}: ${text}`)
+    }
+    if (response.status === 204) return null as T
+    return (await response.json()) as T
+  },
   async select<T>(table: string, query = '*'): Promise<T[]> {
     if (!hasSupabaseEnv) return []
     return call<T[]>(`${table}?select=${encodeURIComponent(query)}`, { headers })
@@ -80,40 +96,62 @@ export const supabaseRest = {
     const ext = file.name.includes('.') ? file.name.split('.').pop() : 'bin'
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
     const path = `${folder}/${safeName}`
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhr.open('POST', `${storageBase}/object/${bucket}/${path}`)
-      xhr.setRequestHeader('apikey', supabaseAnonKey ?? '')
-      xhr.setRequestHeader('Authorization', `Bearer ${supabaseAnonKey ?? ''}`)
-      xhr.setRequestHeader('x-upsert', 'true')
-      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
-      xhr.upload.onprogress = (event) => {
-        if (!event.lengthComputable) return
-        const percent = Math.round((event.loaded / event.total) * 100)
-        onProgress?.(percent)
-      }
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          onProgress?.(100)
-          resolve()
+    const uploadWithXhr = async (mode: 'multipart' | 'binary') => {
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open(mode === 'multipart' ? 'POST' : 'PUT', `${storageBase}/object/${bucket}/${path}`)
+        xhr.setRequestHeader('apikey', supabaseAnonKey ?? '')
+        xhr.setRequestHeader('Authorization', `Bearer ${supabaseAnonKey ?? ''}`)
+        xhr.setRequestHeader('x-upsert', 'true')
+        if (mode === 'binary') {
+          xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+        }
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return
+          const percent = Math.round((event.loaded / event.total) * 100)
+          onProgress?.(percent)
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            onProgress?.(100)
+            resolve()
+            return
+          }
+          let parsedMessage = xhr.responseText
+          try {
+            const parsed = JSON.parse(xhr.responseText) as { message?: string; error?: string }
+            parsedMessage = parsed.message ?? parsed.error ?? xhr.responseText
+          } catch {
+            // keep raw text
+          }
+          reject(
+            new Error(
+              `Storage upload failed (${xhr.status}). ${parsedMessage}. Check that bucket "${bucket}" exists, is accessible, and storage policies allow upload.`,
+            ),
+          )
+        }
+        xhr.onerror = () => reject(new Error('Upload failed due to network error.'))
+        if (mode === 'multipart') {
+          const formData = new FormData()
+          formData.append('file', file)
+          xhr.send(formData)
           return
         }
-        let parsedMessage = xhr.responseText
-        try {
-          const parsed = JSON.parse(xhr.responseText) as { message?: string; error?: string }
-          parsedMessage = parsed.message ?? parsed.error ?? xhr.responseText
-        } catch {
-          // keep raw text
-        }
-        reject(
-          new Error(
-            `Storage upload failed (${xhr.status}). ${parsedMessage}. Check that bucket "${bucket}" exists, is accessible, and storage policies allow upload.`,
-          ),
-        )
+        xhr.send(file)
+      })
+    }
+
+    try {
+      await uploadWithXhr('multipart')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      const isUnsupportedMime =
+        message.toLowerCase().includes('mime type') && message.toLowerCase().includes('not supported')
+      if (!isUnsupportedMime) {
+        throw error
       }
-      xhr.onerror = () => reject(new Error('Upload failed due to network error.'))
-      xhr.send(file)
-    })
+      await uploadWithXhr('binary')
+    }
     const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`
     return { path, publicUrl }
   },
