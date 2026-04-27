@@ -6249,8 +6249,8 @@ h1 {
 
 .careers-page-panel {
   width: 100%;
-  max-width: 1440px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   background: #f8f7f3;
   border-radius: 18px;
   border: 1px solid rgba(9, 20, 35, 0.12);
@@ -6475,7 +6475,9 @@ h1 {
 }
 
 .career-detail-shell {
-  max-width: none;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
   padding-bottom: 0.6rem;
 }
 
