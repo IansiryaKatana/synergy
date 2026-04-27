@@ -2110,6 +2110,40 @@ function App() {
   if (activeServiceCard) {
     const activeHubService = serviceCards[servicesHubIndex] ?? activeServiceCard
     const activeHubServiceDetails = activeHubService.detail_sections?.[0]?.points?.slice(0, 3) ?? [activeHubService.description]
+    const servicesHubPreviewPanel = (
+      <article
+        key={activeHubService.id}
+        className="services-hub-preview"
+        style={
+          activeHubService.image_url
+            ? ({
+                backgroundImage: `linear-gradient(180deg, rgba(7, 12, 20, 0.06), rgba(7, 12, 20, 0.92)), url("${activeHubService.image_url}")`,
+                backgroundSize: 'auto, cover',
+                backgroundPosition: 'center, center',
+                backgroundRepeat: 'no-repeat, no-repeat',
+              } as CSSProperties)
+            : undefined
+        }
+      >
+        <button
+          type="button"
+          className="services-hub-preview-arrow"
+          aria-label={`Open ${activeHubService.title}`}
+          onClick={() => navigateWithTransition(activeHubService.href)}
+        >
+          <UpRightArrowIcon />
+        </button>
+        <div className="services-hub-preview-content">
+          <h2>{activeHubService.title}</h2>
+          <p>{activeHubService.description}</p>
+          <ul>
+            {activeHubServiceDetails.map((point) => (
+              <li key={`${activeHubService.id}-${point}`}>{point}</li>
+            ))}
+          </ul>
+        </div>
+      </article>
+    )
     return (
       <>
         <main className="services-page-shell">
@@ -2170,6 +2204,9 @@ function App() {
                   </button>
                 </div>
               </div>
+              <aside className="services-hub-right services-hub-right-mobile" aria-label="Active service preview">
+                {servicesHubPreviewPanel}
+              </aside>
               <div className="services-hub-cards-viewport" ref={servicesHubTrackRef}>
                 {serviceCards.map((service, index) => (
                   <article
@@ -2201,39 +2238,8 @@ function App() {
                 ))}
               </div>
             </div>
-            <aside className="services-hub-right" aria-label="Active service preview">
-              <article
-                key={activeHubService.id}
-                className="services-hub-preview"
-                style={
-                  activeHubService.image_url
-                    ? ({
-                        backgroundImage: `linear-gradient(180deg, rgba(7, 12, 20, 0.06), rgba(7, 12, 20, 0.92)), url("${activeHubService.image_url}")`,
-                        backgroundSize: 'auto, cover',
-                        backgroundPosition: 'center, center',
-                        backgroundRepeat: 'no-repeat, no-repeat',
-                      } as CSSProperties)
-                    : undefined
-                }
-              >
-                <button
-                  type="button"
-                  className="services-hub-preview-arrow"
-                  aria-label={`Open ${activeHubService.title}`}
-                  onClick={() => navigateWithTransition(activeHubService.href)}
-                >
-                  <UpRightArrowIcon />
-                </button>
-                <div className="services-hub-preview-content">
-                  <h2>{activeHubService.title}</h2>
-                  <p>{activeHubService.description}</p>
-                  <ul>
-                    {activeHubServiceDetails.map((point) => (
-                      <li key={`${activeHubService.id}-${point}`}>{point}</li>
-                    ))}
-                  </ul>
-                </div>
-              </article>
+            <aside className="services-hub-right services-hub-right-desktop" aria-label="Active service preview">
+              {servicesHubPreviewPanel}
             </aside>
             <div
               className={`mobile-menu-overlay ${isMobileMenuOpen ? 'open' : ''}`}
