@@ -56,6 +56,25 @@ function normalizeExternalLink(raw: string) {
   return `https://${trimmed}`
 }
 
+function sanitizeRichHtml(input?: string | null) {
+  if (!input) return ''
+  if (typeof window === 'undefined') return input
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(input, 'text/html')
+  doc.querySelectorAll('script,iframe,object,embed').forEach((node) => node.remove())
+  doc.querySelectorAll('*').forEach((el) => {
+    for (const attr of Array.from(el.attributes)) {
+      const attrName = attr.name.toLowerCase()
+      const attrValue = attr.value.trim().toLowerCase()
+      if (attrName.startsWith('on')) el.removeAttribute(attr.name)
+      if ((attrName === 'href' || attrName === 'src') && attrValue.startsWith('javascript:')) {
+        el.removeAttribute(attr.name)
+      }
+    }
+  })
+  return doc.body.innerHTML
+}
+
 function SocialIcon({ name }: { name: string }) {
   const normalized = name.toLowerCase()
   if (normalized.includes('instagram') || normalized === 'ig') return <span aria-hidden="true">IG</span>
@@ -1362,11 +1381,6 @@ function App() {
           <header className="about-team-header">
             <div className="about-team-heading-row">
               <div className="about-team-heading-left">
-                <img
-                  src={siteContent.branding.favicon_url || '/SYNERGY logo.png'}
-                  alt={`${siteContent.branding.company_name} favicon`}
-                  className="about-team-favicon"
-                />
                 <h2>Our team</h2>
               </div>
               <div className="about-team-nav-arrows" aria-label="Team navigation">
@@ -1728,7 +1742,14 @@ function App() {
                 </a>
                 <p className="careers-hiring-pill entrance-seq entrance-2">{selectedCareerJob.department}</p>
                 <h1 className="entrance-seq entrance-2">{selectedCareerJob.title}</h1>
-                <p className="entrance-seq entrance-3">{selectedCareerJob.summary}</p>
+                {selectedCareerJob.job_description_html ? (
+                  <div
+                    className="career-job-description-html entrance-seq entrance-3"
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(selectedCareerJob.job_description_html) }}
+                  />
+                ) : (
+                  <p className="entrance-seq entrance-3">{selectedCareerJob.summary}</p>
+                )}
                 <div className="career-job-meta entrance-seq entrance-3">
                   <span className="career-meta-pill career-meta-pill-location">
                     {selectedCareerJob.location_label || selectedCareerJob.workplace_type || 'Remote'}

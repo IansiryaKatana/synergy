@@ -56,6 +56,7 @@ export type JobPost = {
   title: string
   department: string
   summary: string
+  job_description_html?: string | null
   location_label: string
   employment_type: string
   workplace_type: string
@@ -303,6 +304,7 @@ const fallback: SiteContent = {
       title: 'Product Designer',
       department: 'Design',
       summary: 'We are looking for a mid-level product designer to join our team.',
+      job_description_html: '',
       location_label: '100% remote',
       employment_type: 'Full-time',
       workplace_type: 'Remote',
@@ -315,6 +317,7 @@ const fallback: SiteContent = {
       title: 'Engineering Manager',
       department: 'Development',
       summary: 'We are looking for an experienced engineering manager to join our team.',
+      job_description_html: '',
       location_label: '100% remote',
       employment_type: 'Full-time',
       workplace_type: 'Remote',
@@ -327,6 +330,7 @@ const fallback: SiteContent = {
       title: 'Customer Success Manager',
       department: 'Customer Service',
       summary: 'We are looking for a customer success manager to join our team.',
+      job_description_html: '',
       location_label: '100% remote',
       employment_type: 'Full-time',
       workplace_type: 'Remote',

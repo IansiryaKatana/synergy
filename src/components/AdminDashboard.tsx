@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react'
+import { useEffect, useMemo, useRef, useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react'
 import {
   Briefcase,
   ChartNoAxesColumn,
@@ -775,7 +775,7 @@ function defaultForm(entity: EntityType): Record<string, unknown> {
   if (entity === 'team_members') return { ...base, initials: '', name: '', role: '', bio: '', email: '', number: '', avatar_url: '' }
   if (entity === 'services') return { ...base, tag: '', title: '', description: '', quote: '', image_url: '', detail_sections: '[]' }
   if (entity === 'insights') return { ...base, chip: '', date_label: '', title: '', alt_style: false, image_url: '' }
-  if (entity === 'job_posts') return { ...base, title: '', department: '', summary: '', location_label: '', employment_type: '', workplace_type: '', apply_url: '' }
+  if (entity === 'job_posts') return { ...base, title: '', department: '', summary: '', job_description_html: '', location_label: '', employment_type: '', workplace_type: '', apply_url: '' }
   return { ...base, kind: 'asset', label: '', value: '', link_url: '', file_path: '', file_url: '' }
 }
 
@@ -825,7 +825,7 @@ function renderFields(
     team_members: ['avatar_url', 'id', 'initials', 'name', 'role', 'bio', 'email', 'number', 'sort_order', 'is_active'],
     services: ['image_url', 'id', 'tag', 'title', 'description', 'quote', 'sort_order', 'is_active'],
     insights: ['image_url', 'id', 'chip', 'date_label', 'title', 'alt_style', 'sort_order', 'is_active'],
-    job_posts: ['id', 'title', 'department', 'summary', 'location_label', 'employment_type', 'workplace_type', 'apply_url', 'sort_order', 'is_active'],
+    job_posts: ['id', 'title', 'department', 'summary', 'job_description_html', 'location_label', 'employment_type', 'workplace_type', 'apply_url', 'sort_order', 'is_active'],
     media_items: ['value', 'link_url', 'id', 'kind', 'label', 'file_path', 'file_url', 'sort_order', 'is_active'],
   }
   return (
@@ -835,6 +835,7 @@ function renderFields(
         const isBool = typeof value === 'boolean'
         const isUpload = field.endsWith('_url') || field === 'value'
         const isJsonField = field === 'detail_sections'
+        const isRichText = field === 'job_description_html'
         return (
           <label key={field}>
             {field}
@@ -847,7 +848,12 @@ function renderFields(
             ) : (
               <>
                 <div className="admin-field-with-browse">
-                  {isJsonField ? (
+                  {isRichText ? (
+                    <RichTextEditor
+                      value={String(value ?? '')}
+                      onChange={(nextValue) => setFormValues((prev) => ({ ...prev, [field]: nextValue }))}
+                    />
+                  ) : isJsonField ? (
                     <textarea
                       value={String(value ?? '')}
                       onChange={(event) => setFormValues((prev) => ({ ...prev, [field]: event.target.value }))}
@@ -1126,6 +1132,41 @@ function renderServiceDetailsEditor(
       >
         Add section
       </button>
+    </div>
+  )
+}
+
+function RichTextEditor({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const editorRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return
+    if (editor.innerHTML !== value) editor.innerHTML = value || ''
+  }, [value])
+
+  const run = (command: string, commandValue?: string) => {
+    document.execCommand(command, false, commandValue)
+    const editor = editorRef.current
+    if (editor) onChange(editor.innerHTML)
+  }
+
+  return (
+    <div className="admin-rich-editor">
+      <div className="admin-rich-toolbar">
+        <button type="button" className="admin-btn" onClick={() => run('bold')}>Bold</button>
+        <button type="button" className="admin-btn" onClick={() => run('italic')}>Italic</button>
+        <button type="button" className="admin-btn" onClick={() => run('underline')}>Underline</button>
+        <button type="button" className="admin-btn" onClick={() => run('insertUnorderedList')}>Bullet list</button>
+        <button type="button" className="admin-btn" onClick={() => run('insertOrderedList')}>Number list</button>
+      </div>
+      <div
+        ref={editorRef}
+        className="admin-rich-surface"
+        contentEditable
+        suppressContentEditableWarning
+        onInput={(event) => onChange(event.currentTarget.innerHTML)}
+      />
     </div>
   )
 }

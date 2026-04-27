@@ -4954,6 +4954,47 @@ h1 {
     overflow-wrap: anywhere;
   }
 
+  .about-team-section {
+    padding: 1.2rem 0.52rem 1.8rem;
+  }
+
+  .about-team-header {
+    padding: 0 0 0.9rem;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .about-team-cards-viewport {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .about-team-cards-track {
+    --about-team-carousel-gap: 0.6rem;
+    --about-team-visible-cards: 2;
+    gap: var(--about-team-carousel-gap);
+    transform: translateX(
+      calc(
+        var(--about-team-slide-offset, 0) * -1 *
+          ((100% - var(--about-team-carousel-gap)) / var(--about-team-visible-cards) + var(--about-team-carousel-gap))
+      )
+    );
+  }
+
+  .about-team-card,
+  .about-team-card-media {
+    border-radius: 0;
+  }
+
+  .about-team-card {
+    flex: 0 0 calc((100% - var(--about-team-carousel-gap)) / 2);
+  }
+
+  .about-team-dots {
+    justify-content: flex-start;
+  }
+
   .about-brand-desktop {
     display: none;
   }
@@ -5360,14 +5401,14 @@ h1 {
 
   .about-team-section {
     min-height: auto;
-    padding: 1.2rem 0.52rem 1.8rem;
+    padding: 1.2rem 0.75rem 1.8rem;
     display: block;
   }
 
   .about-team-header {
     display: grid;
     grid-template-columns: 1fr;
-    padding: 0 0.1rem;
+    padding: 0 0.15rem 0.9rem;
   }
 
   .about-team-header p {
@@ -5377,7 +5418,14 @@ h1 {
 
   .about-team-cards-track {
     --about-team-carousel-gap: 0;
+    --about-team-visible-cards: 1;
+    gap: 0;
     transform: translateX(calc(var(--about-team-slide-offset, 0) * -100%));
+  }
+
+  .about-team-cards-viewport {
+    padding: 0 0.15rem 0.1rem;
+    border-radius: 0;
   }
 
   .about-team-card {
@@ -5385,6 +5433,15 @@ h1 {
     width: 100%;
     max-width: 100%;
     min-height: 300px;
+    border-radius: 0;
+  }
+
+  .about-team-card-media {
+    border-radius: 0;
+  }
+
+  .about-team-dots {
+    justify-content: flex-start;
   }
 
   .contact-page-hero-content {
@@ -6736,4 +6793,49 @@ h1 {
   text-align: center;
   display: grid;
   gap: 0.8rem;
+}
+
+.admin-rich-editor {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-rich-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.admin-rich-toolbar .admin-btn {
+  padding: 0.35rem 0.55rem;
+  min-height: auto;
+}
+
+.admin-rich-surface {
+  min-height: 190px;
+  border: 1px solid rgba(27, 60, 97, 0.25);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.7rem 0.8rem;
+  outline: none;
+}
+
+.admin-rich-surface:focus {
+  border-color: rgba(17, 90, 166, 0.55);
+  box-shadow: 0 0 0 3px rgba(17, 90, 166, 0.16);
+}
+
+.career-job-description-html {
+  color: rgba(10, 18, 31, 0.9);
+  line-height: 1.75;
+}
+
+.career-job-description-html p {
+  margin: 0.5rem 0;
+}
+
+.career-job-description-html ul,
+.career-job-description-html ol {
+  margin: 0.6rem 0 0.8rem 1.2rem;
+  padding: 0;
 }
