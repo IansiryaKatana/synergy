@@ -65,6 +65,38 @@ function SocialIcon({ name }: { name: string }) {
   return <span aria-hidden="true">o</span>
 }
 
+function AboutTeamCardImage({ member }: { member: TeamMember }) {
+  const avatarUrl = member.avatar_url?.trim() ?? ''
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    setLoaded(false)
+    setFailed(false)
+  }, [avatarUrl, member.id])
+
+  if (!avatarUrl || failed) {
+    return <span className="about-team-card-fallback">{member.initials}</span>
+  }
+
+  return (
+    <>
+      {!loaded ? <span className="about-team-card-skeleton" aria-hidden="true" /> : null}
+      <img
+        src={avatarUrl}
+        alt={member.name}
+        className={`about-team-card-image ${loaded ? 'loaded' : ''}`}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        onError={() => {
+          setFailed(true)
+          setLoaded(false)
+        }}
+      />
+    </>
+  )
+}
+
 function formatProjectTitle(title: string) {
   const firstLineRaw = title.includes('Hotel Apartment')
     ? title.replace('Hotel Apartment', '').trim()
@@ -1383,11 +1415,7 @@ function App() {
                   key={member.id}
                 >
                   <div className="about-team-card-media">
-                    {member.avatar_url ? (
-                      <img src={member.avatar_url} alt={member.name} className="about-team-card-image" />
-                    ) : (
-                      <span className="about-team-card-fallback">{member.initials}</span>
-                    )}
+                    <AboutTeamCardImage member={member} />
                   </div>
                   <div className="about-team-card-meta">
                     <h3>{member.name}</h3>
