@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import PhoneInputLib from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { AdminDashboard, type AdminPage } from './components/AdminDashboard'
-import Noise from './components/Noise'
 import { TextPressureWord } from './components/TextPressureWord'
 import { contentApi, type JobPost, type ServiceItem, type SiteContent, type TeamMember } from './lib/content'
 
@@ -731,30 +730,41 @@ function App() {
     [selectedCareerId, siteContent.jobs],
   )
   const isCareerDetailRoute = isCareersRoute && selectedCareerId.length > 0
-  const homepageHeroVideoSrc =
-    siteContent.branding.homepage_hero_video_url?.trim() ||
-    'https://www.pexels.com/download/video/10320249/'
+  const homepageHeroVideoSrc = siteContent.branding.homepage_hero_video_url?.trim() ?? ''
+  const homepageHeroMediaStyle = homepageHeroVideoSrc
+    ? ({
+        background:
+          'linear-gradient(to top, rgba(6, 14, 24, 0.36) 0%, rgba(6, 14, 24, 0.14) 55%, rgba(6, 14, 24, 0.04) 100%)',
+      } as CSSProperties)
+    : undefined
   const aboutHeroMediaStyle = siteContent.branding.about_hero_background_url
     ? ({
         backgroundImage:
-          `linear-gradient(to top, rgba(6, 14, 24, 0.56) 0%, rgba(6, 14, 24, 0.18) 55%, rgba(6, 14, 24, 0.04) 100%), ` +
+          `linear-gradient(to top, rgba(6, 14, 24, 0.36) 0%, rgba(6, 14, 24, 0.14) 55%, rgba(6, 14, 24, 0.04) 100%), ` +
           `url("${siteContent.branding.about_hero_background_url}")`,
+        backgroundSize: 'auto, cover',
+        backgroundPosition: 'center, center',
+        backgroundRepeat: 'no-repeat, no-repeat',
       } as CSSProperties)
     : undefined
   const contactHeroMediaStyle = siteContent.branding.contact_hero_background_url
     ? ({
         backgroundImage:
-          `linear-gradient(to top, rgba(6, 14, 24, 0.56) 0%, rgba(6, 14, 24, 0.18) 55%, rgba(6, 14, 24, 0.04) 100%), ` +
+          `linear-gradient(to top, rgba(6, 14, 24, 0.36) 0%, rgba(6, 14, 24, 0.14) 55%, rgba(6, 14, 24, 0.04) 100%), ` +
           `url("${siteContent.branding.contact_hero_background_url}")`,
+        backgroundSize: 'auto, cover',
+        backgroundPosition: 'center, center',
+        backgroundRepeat: 'no-repeat, no-repeat',
       } as CSSProperties)
     : undefined
   const teamSectionStyle = siteContent.branding.homepage_team_background_url
     ? ({
         backgroundImage:
-          `linear-gradient(to top, rgba(8, 39, 74, 0.84) 0%, rgba(8, 39, 74, 0.18) 58%), ` +
-          `radial-gradient(circle at 80% -10%, rgba(219, 238, 255, 0.16), transparent 44%), ` +
-          `var(--quote-noise-url), ` +
+          `linear-gradient(to top, rgba(8, 39, 74, 0.42) 0%, rgba(8, 39, 74, 0.16) 58%), ` +
           `url("${siteContent.branding.homepage_team_background_url}")`,
+        backgroundSize: 'auto, cover',
+        backgroundPosition: 'center, center',
+        backgroundRepeat: 'no-repeat, no-repeat',
       } as CSSProperties)
     : undefined
   const socialMediaItems = useMemo(
@@ -1137,7 +1147,6 @@ function App() {
       <main className="about-page-shell">
         <section className="about-page-hero">
           <div className="about-page-hero-visual-frame" aria-hidden="true">
-            <div className="noise-layer" />
             <div className="about-page-hero-media" style={aboutHeroMediaStyle} />
           </div>
           <header className="top-nav about-page-header">
@@ -1410,13 +1419,6 @@ function App() {
       <main className="contact-page-shell">
         <section className="contact-page-hero">
           <div className="contact-page-hero-visual-frame" aria-hidden="true">
-            <Noise
-              patternSize={250}
-              patternScaleX={2}
-              patternScaleY={2}
-              patternRefreshInterval={2}
-              patternAlpha={48}
-            />
             <div className="contact-page-hero-media" style={contactHeroMediaStyle} />
           </div>
           <header className="top-nav contact-page-header">
@@ -2109,18 +2111,19 @@ function App() {
         <section ref={heroSceneRef} className="scroll-scene hero-scene">
           <div className="hero-container hero-stage" style={heroVars}>
             <div className="hero-visual-frame" aria-hidden="true">
-              <div className="noise-layer" />
-              <div className="hero-media" />
-              <video
-                className="sticky-blue-wash-video"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-              >
-                <source src={homepageHeroVideoSrc} type="video/mp4" />
-              </video>
+              <div className="hero-media" style={homepageHeroMediaStyle} />
+              {homepageHeroVideoSrc ? (
+                <video
+                  className="sticky-blue-wash-video"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="auto"
+                >
+                  <source src={homepageHeroVideoSrc} type="video/mp4" />
+                </video>
+              ) : null}
             </div>
             <header className="top-nav top-nav-hero" style={headerBlendVars}>
               <div className="nav-bubble">

@@ -44,6 +44,7 @@ export type MediaItem = {
   kind: 'trust' | 'social' | 'asset'
   label: string
   value: string
+  link_url?: string | null
   file_path?: string | null
   file_url?: string | null
   sort_order: number
@@ -90,6 +91,10 @@ export type BrandingContent = {
   footer_email: string
   logo_url?: string | null
   favicon_url?: string | null
+  homepage_hero_video_url?: string | null
+  homepage_team_background_url?: string | null
+  about_hero_background_url?: string | null
+  contact_hero_background_url?: string | null
 }
 
 export type SiteContent = {
@@ -124,20 +129,43 @@ const fallback: SiteContent = {
     footer_email: 'Hello@synergypm.ae',
     logo_url: null,
     favicon_url: null,
+    homepage_hero_video_url: null,
+    homepage_team_background_url: null,
+    about_hero_background_url: null,
+    contact_hero_background_url: null,
   },
   team: [
-    { id: 'ahmad-al-akhras', initials: 'AH', name: 'Ahmad Al Akhras', role: 'Project Director', number: '01', email: 'ahmad.al.akhras@synergypm.com', bio: 'Directs project strategy, governance, and delivery standards across all active programs.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 1, is_active: true },
-    { id: 'raj-gopal', initials: 'RA', name: 'Raj Gopal', role: 'Project Administrator', number: '02', email: 'raj.gopal@synergypm.com', bio: 'Administers schedules, records, and documentation to keep projects organized and compliant.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 2, is_active: true },
-    { id: 'saju-pandarakandy', initials: 'SA', name: 'Saju Pandarakandy', role: 'Project Manager', number: '03', email: 'saju.pandarakandy@synergypm.com', bio: 'Plans execution milestones, aligns teams, and delivers outcomes within scope commitments.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 3, is_active: true },
-    { id: 'rafa-nalakath', initials: 'RA', name: 'Rafa Nalakath', role: 'Project Engineer', number: '04', email: 'rafa.nalakath@synergypm.com', bio: 'Oversees technical tasks, resolves engineering issues, and supports reliable project delivery.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 4, is_active: true },
-    { id: 'jofeli-gelid', initials: 'JO', name: 'Jofeli Gelid', role: 'QA/QC Engineer', number: '05', email: 'jofeli.gelid@synergypm.com', bio: 'Ensures quality standards, inspections, and corrective actions meet required specifications consistently.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 5, is_active: true },
-    { id: 'anu-liju', initials: 'AN', name: 'Anu Liju', role: 'Projects Coordinator', number: '06', email: 'anu.liju@synergypm.com', bio: 'Coordinates teams, updates trackers, and follows through on day-to-day deliverables consistently.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 6, is_active: true },
-    { id: 'anish-vettuvelil', initials: 'AN', name: 'Anish Vettuvelil', role: 'Chief Financial Officer', number: '07', email: 'anish.vettuvelil@synergypm.com', bio: 'Leads financial planning, budgeting, and controls to support sustainable project growth.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 7, is_active: true },
-    { id: 'imran-essack', initials: 'IM', name: 'Imran Essack', role: 'Project Financial Auditor', number: '08', email: 'imran.essack@synergypm.com', bio: 'Audits project finances, verifies controls, and reports risks with clear recommendations.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 8, is_active: true },
-    { id: 'mohd-nafas', initials: 'MO', name: 'Mohd. Nafas', role: 'Human Resource Manager', number: '09', email: 'mohd.nafas@synergypm.com', bio: 'Manages hiring, people policies, and team development to strengthen project performance.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 9, is_active: true },
-    { id: 'khalid-omran', initials: 'KH', name: 'Khalid Omran', role: 'Legal Advisor', number: '10', email: 'khalid.omran@synergypm.com', bio: 'Advises on contracts, compliance, and legal risk across project operations daily.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 10, is_active: true },
-    { id: 'jipson-k-j', initials: 'JI', name: 'Jipson K J', role: 'System Administrator', number: '11', email: 'jipson.kj@synergypm.com', bio: 'Maintains infrastructure, access, and system reliability for uninterrupted team operations daily.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 11, is_active: true },
-    { id: 'urvi-patel', initials: 'UR', name: 'Urvi Patel', role: 'Customer Service Executive', number: '12', email: 'urvi.patel@synergypm.com', bio: 'Supports client communication, resolves requests, and ensures responsive service experiences consistently.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 12, is_active: true },
+    { id: 'anish-vettuvelil', initials: 'AN', name: 'Anish Vettuvelil', role: 'Chief Financial Officer', number: '01', email: 'anish.vettuvelil@synergypm.com', bio: 'Leads financial planning, budgeting, and controls to support sustainable project growth.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 1, is_active: true },
+    { id: 'yan-thappa', initials: 'YT', name: 'Yan Thappa', role: 'Project Manager', number: '02', email: 'yan.thappa@synergypm.com', bio: 'Coordinates project execution plans, milestones, and delivery timelines across teams.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 2, is_active: true },
+    { id: 'sidhiq-ahemedkunhi', initials: 'SA', name: 'Sidhiq Ahemedkunhi', role: 'Project Financial Officer (Uae)', number: '03', email: 'sidhiq.ahemedkunhi@synergypm.com', bio: 'Manages UAE project financial operations, controls, and reporting requirements.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 3, is_active: true },
+    { id: 'rajesh-sebastain', initials: 'RS', name: 'Rajesh Sebastain', role: 'Project Financial Officer (Uk)', number: '04', email: 'rajesh.sebastain@synergypm.com', bio: 'Oversees UK project budgets, compliance, and financial performance reporting.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 4, is_active: true },
+    { id: 'vishnu-balachnadran', initials: 'VB', name: 'Vishnu Balachnadran', role: 'Financial Auditor', number: '05', email: 'vishnu.balachnadran@synergypm.com', bio: 'Reviews financial records, validates controls, and highlights risk exposure.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 5, is_active: true },
+    { id: 'saira', initials: 'SA', name: 'Saira', role: 'Human Resource Manager', number: '06', email: 'saira@synergypm.com', bio: 'Leads recruitment, people operations, and employee engagement initiatives.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 6, is_active: true },
+    { id: 'divya-velikkath', initials: 'DV', name: 'Divya Velikkath', role: 'Hr Coordinator', number: '07', email: 'divya.velikkath@synergypm.com', bio: 'Supports HR workflows, onboarding, and employee lifecycle coordination.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 7, is_active: true },
+    { id: 'rituja-shahane', initials: 'RS', name: 'Rituja Shahane', role: 'Social Media Specialist', number: '08', email: 'rituja.shahane@synergypm.com', bio: 'Plans and executes social campaigns to improve brand reach and engagement.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 8, is_active: true },
+    { id: 'rohan-smith', initials: 'RS', name: 'Rohan Smith', role: 'Paralegal', number: '09', email: 'rohan.smith@synergypm.com', bio: 'Supports legal documentation, case preparation, and compliance follow-through.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 9, is_active: true },
+    { id: 'ankita-ananad-acharya', initials: 'AA', name: 'Ankita Ananad Acharya', role: 'Compliance Officer', number: '10', email: 'ankita.ananad.acharya@synergypm.com', bio: 'Maintains compliance programs, audits controls, and enforces policy standards.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 10, is_active: true },
+    { id: 'adeeb-noor-mahomed', initials: 'AN', name: 'Adeeb Noor Mahomed', role: 'Compliance Officer', number: '11', email: 'adeeb.noor.mahomed@synergypm.com', bio: 'Monitors regulatory requirements and supports audit-ready compliance operations.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 11, is_active: true },
+    { id: 'natalia-anna-gosciniak', initials: 'NG', name: 'Natalia Anna Gosciniak', role: 'Marketing Director', number: '12', email: 'natalia.anna.gosciniak@synergypm.com', bio: 'Leads marketing strategy, positioning, and growth initiatives across channels.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 12, is_active: true },
+    { id: 'raina-ezechiel', initials: 'RE', name: 'Raina Ezechiel', role: 'Marketing Manager', number: '13', email: 'raina.ezechiel@synergypm.com', bio: 'Drives campaign planning, execution, and performance optimization.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 13, is_active: true },
+    { id: 'shibila-hakeem', initials: 'SH', name: 'Shibila Hakeem', role: 'Senior Marketing Executive', number: '14', email: 'shibila.hakeem@synergypm.com', bio: 'Executes channel programs and tracks marketing conversion outcomes.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 14, is_active: true },
+    { id: 'devapriya-venugopal', initials: 'DV', name: 'Devapriya Venugopal', role: 'Marketing Assistant', number: '15', email: 'devapriya.venugopal@synergypm.com', bio: 'Supports campaign operations, content scheduling, and reporting workflows.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 15, is_active: true },
+    { id: 'dhanashree-vishwanath', initials: 'DV', name: 'Dhanashree Vishwanath', role: 'Senior Graphic Designer', number: '16', email: 'dhanashree.vishwanath@synergypm.com', bio: 'Designs visual assets and ensures brand consistency across outputs.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 16, is_active: true },
+    { id: 'muhammed-jadeer', initials: 'MJ', name: 'Muhammed Jadeer', role: 'Senior Graphic Designer', number: '17', email: 'muhammed.jadeer@synergypm.com', bio: 'Creates high-impact graphics for campaigns, web, and production deliverables.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 17, is_active: true },
+    { id: 'harold-garcia-perez', initials: 'HP', name: 'Harold Garcia Perez', role: 'Production Manager', number: '18', email: 'harold.garcia.perez@synergypm.com', bio: 'Leads production schedules, quality checks, and delivery coordination.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 18, is_active: true },
+    { id: 'john-benedick-amo', initials: 'JA', name: 'John Benedick Amo', role: 'Production Coordinator', number: '19', email: 'john.benedick.amo@synergypm.com', bio: 'Coordinates production tasks, handoffs, and team communication.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 19, is_active: true },
+    { id: 'misba-naz-saikalgar', initials: 'MS', name: 'Misba Naz Saikalgar', role: 'Sales Coordinator', number: '20', email: 'misba.naz.saikalgar@synergypm.com', bio: 'Supports sales operations, lead workflows, and follow-up execution.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 20, is_active: true },
+    { id: 'wasim-iqbal', initials: 'WI', name: 'Wasim Iqbal', role: 'Sales Manager', number: '21', email: 'wasim.iqbal@synergypm.com', bio: 'Leads sales strategy, pipeline growth, and team performance tracking.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 21, is_active: true },
+    { id: 'rajgopalan-vasudevan', initials: 'RV', name: 'Rajgopalan Vasudevan', role: 'Head of Operations', number: '22', email: 'rajgopalan.vasudevan@synergypm.com', bio: 'Oversees operational systems, delivery governance, and process optimization.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 22, is_active: true },
+    { id: 'carmichael-galbis-anacin', initials: 'CA', name: 'Carmichael Galbis Anacin', role: 'Shopify Developer', number: '23', email: 'carmichael.galbis.anacin@synergypm.com', bio: 'Builds and maintains Shopify storefront features and integrations.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 23, is_active: true },
+    { id: 'marvin-osei', initials: 'MO', name: 'Marvin Osei', role: 'Media Manager', number: '24', email: 'marvin.osei@synergypm.com', bio: 'Manages media planning, production assets, and distribution quality.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 24, is_active: true },
+    { id: 'ian-sirya-katana', initials: 'IK', name: 'Ian Sirya Katana', role: 'Lead Software Developer', number: '25', email: 'ian.sirya.katana@synergypm.com', bio: 'Leads software architecture, implementation quality, and technical delivery.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 25, is_active: true },
+    { id: 'theophilus-aidoo', initials: 'TA', name: 'Theophilus Aidoo', role: 'Graphic Designer', number: '26', email: 'theophilus.aidoo@synergypm.com', bio: 'Designs creative assets for digital, print, and campaign touchpoints.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 26, is_active: true },
+    { id: 'yasmin-azzawi', initials: 'YA', name: 'Yasmin Azzawi', role: 'Marketing Manager', number: '27', email: 'yasmin.azzawi@synergypm.com', bio: 'Leads campaign execution and channel performance for market growth.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 27, is_active: true },
+    { id: 'may-zin-htwe', initials: 'MH', name: 'May Zin Htwe', role: 'CRM Assistant', number: '28', email: 'may.zin.htwe@synergypm.com', bio: 'Maintains CRM records, customer lifecycle updates, and reporting accuracy.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 28, is_active: true },
+    { id: 'anjelica-bergonia-verosil', initials: 'AV', name: 'Anjelica Bergonia Verosil', role: 'Personal Assistant', number: '29', email: 'anjelica.bergonia.verosil@synergypm.com', bio: 'Provides executive coordination, scheduling, and administrative support.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 29, is_active: true },
+    { id: 'mohammed-rafiq-amanji', initials: 'MA', name: 'Mohammed Rafiq Amanji', role: 'Executive Assistant for CEO', number: '30', email: 'mohammed.rafiq.amanji@synergypm.com', bio: 'Supports CEO priorities through planning, communication, and follow-through.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 30, is_active: true },
+    { id: 'zohra-zoulati', initials: 'ZZ', name: 'Zohra Zoulati', role: 'Front office Executive', number: '31', email: 'zohra.zoulati@synergypm.com', bio: 'Manages front office operations, visitor experience, and communication flow.', avatar_url: 'https://fjnzcubicgrkhbwwrtpu.supabase.co/storage/v1/object/public/media/admin/1775821932031-cjdfu8xdn6k.jpg', sort_order: 31, is_active: true },
   ],
   services: [
     {
@@ -264,10 +292,10 @@ const fallback: SiteContent = {
     { id: 'trust-2', kind: 'trust', label: 'Lightspeed', value: 'Lightspeed', sort_order: 2, is_active: true },
     { id: 'trust-3', kind: 'trust', label: 'Sitemark', value: 'Sitemark', sort_order: 3, is_active: true },
     { id: 'trust-4', kind: 'trust', label: 'Hamilton', value: 'Hamilton', sort_order: 4, is_active: true },
-    { id: 'social-1', kind: 'social', label: 'x', value: 'x', sort_order: 1, is_active: true },
-    { id: 'social-2', kind: 'social', label: 'in', value: 'in', sort_order: 2, is_active: true },
-    { id: 'social-3', kind: 'social', label: 'ig', value: 'ig', sort_order: 3, is_active: true },
-    { id: 'social-4', kind: 'social', label: 'f', value: 'f', sort_order: 4, is_active: true },
+    { id: 'social-1', kind: 'social', label: 'X', value: 'X', link_url: 'https://x.com', sort_order: 1, is_active: true },
+    { id: 'social-2', kind: 'social', label: 'LinkedIn', value: 'LinkedIn', link_url: 'https://linkedin.com', sort_order: 2, is_active: true },
+    { id: 'social-3', kind: 'social', label: 'Instagram', value: 'Instagram', link_url: 'https://instagram.com', sort_order: 3, is_active: true },
+    { id: 'social-4', kind: 'social', label: 'Facebook', value: 'Facebook', link_url: 'https://facebook.com', sort_order: 4, is_active: true },
   ],
   jobs: [
     {
@@ -363,20 +391,37 @@ export const contentApi = {
     return supabaseRest.uploadMedia(file, folder, undefined, onProgress)
   },
   async listMediaFiles() {
-    try {
-      const files = await supabaseRest.listMedia()
-      return files.map((entry) => ({
-        path: entry.name,
-        publicUrl: supabaseRest.getPublicMediaUrl(entry.name),
-      }))
-    } catch {
-      const assets = await supabaseRest.select<MediaItem>('media_items')
-      return assets
-        .filter((item) => item.kind === 'asset' && Boolean(item.file_url || item.value))
-        .map((item) => ({
-          path: item.file_path ?? item.label ?? item.id,
-          publicUrl: item.file_url ?? item.value,
-        }))
+    const [storageResult, assetsResult] = await Promise.allSettled([
+      supabaseRest.listMedia(),
+      supabaseRest.select<MediaItem>('media_items'),
+    ])
+
+    const storageItems =
+      storageResult.status === 'fulfilled'
+        ? storageResult.value.map((entry) => ({
+            path: entry.name,
+            publicUrl: supabaseRest.getPublicMediaUrl(entry.name),
+          }))
+        : []
+
+    const assetItems =
+      assetsResult.status === 'fulfilled'
+        ? assetsResult.value
+            .filter((item) => item.kind === 'asset' && Boolean(item.file_url || item.value))
+            .map((item) => ({
+              path: item.file_path ?? item.label ?? item.id,
+              publicUrl: item.file_url ?? item.value,
+            }))
+        : []
+
+    const merged = [...storageItems, ...assetItems].filter(
+      (item) => typeof item.publicUrl === 'string' && /^https?:\/\//i.test(item.publicUrl),
+    )
+
+    const deduped = new Map<string, { path: string; publicUrl: string }>()
+    for (const item of merged) {
+      if (!deduped.has(item.publicUrl)) deduped.set(item.publicUrl, item)
     }
+    return Array.from(deduped.values())
   },
 }

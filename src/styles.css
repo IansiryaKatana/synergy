@@ -118,7 +118,9 @@ a {
 .hero-media {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(6, 14, 24, 0.56) 0%, rgba(6, 14, 24, 0.18) 55%, rgba(6, 14, 24, 0.04) 100%);
+  background:
+    linear-gradient(160deg, rgba(3, 9, 20, 0.96) 0%, rgba(4, 16, 35, 0.9) 52%, rgba(9, 45, 86, 0.78) 100%),
+    radial-gradient(circle at 78% 10%, rgba(44, 124, 214, 0.34), transparent 48%);
   z-index: -2;
 }
 
@@ -869,9 +871,9 @@ a {
   inset: 0;
   z-index: -2;
   background:
-    linear-gradient(to top, rgba(6, 14, 24, 0.56) 0%, rgba(6, 14, 24, 0.18) 55%, rgba(6, 14, 24, 0.04) 100%),
-    url('https://images.pexels.com/photos/1446513/pexels-photo-1446513.jpeg');
-  background-size: auto, cover;
+    linear-gradient(160deg, rgba(3, 9, 20, 0.96) 0%, rgba(4, 16, 35, 0.9) 52%, rgba(9, 45, 86, 0.78) 100%),
+    radial-gradient(circle at 78% 10%, rgba(44, 124, 214, 0.34), transparent 48%);
+  background-size: cover, cover;
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
 }
@@ -1333,9 +1335,9 @@ a {
   inset: 0;
   z-index: 0;
   background:
-    linear-gradient(to top, rgba(6, 14, 24, 0.56) 0%, rgba(6, 14, 24, 0.18) 55%, rgba(6, 14, 24, 0.04) 100%),
-    url('https://images.pexels.com/photos/34092/pexels-photo.jpg');
-  background-size: auto, cover;
+    linear-gradient(160deg, rgba(3, 9, 20, 0.96) 0%, rgba(4, 16, 35, 0.9) 52%, rgba(9, 45, 86, 0.78) 100%),
+    radial-gradient(circle at 78% 10%, rgba(44, 124, 214, 0.34), transparent 48%);
+  background-size: cover, cover;
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
   transform: scale(1.04);
@@ -2797,12 +2799,11 @@ h1 {
   background:
     linear-gradient(to top, rgba(8, 39, 74, 0.84) 0%, rgba(8, 39, 74, 0.18) 58%),
     radial-gradient(circle at 80% -10%, rgba(219, 238, 255, 0.16), transparent 44%),
-    var(--quote-noise-url),
-    url('https://images.pexels.com/photos/10143241/pexels-photo-10143241.jpeg');
-  background-size: auto, auto, 120px 120px, cover;
-  background-position: center, center, center, center;
-  background-repeat: no-repeat, no-repeat, repeat, no-repeat;
-  background-blend-mode: normal, normal, soft-light, normal;
+    linear-gradient(160deg, rgba(3, 9, 20, 0.96) 0%, rgba(4, 16, 35, 0.9) 52%, rgba(9, 45, 86, 0.78) 100%);
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-blend-mode: normal, normal, normal;
   display: flex;
   flex-direction: column;
 }
