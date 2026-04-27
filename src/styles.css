@@ -2016,7 +2016,7 @@ a {
   justify-content: space-between;
   border-radius: 0;
   padding: 1.1rem 0.2rem;
-  font-size: 24px;
+  font-size: 18px;
   line-height: 1.05;
   font-weight: 400;
   color: #12253b;
@@ -2030,7 +2030,7 @@ a {
 .mobile-menu-links a.active {
   background: transparent;
   color: var(--brand-blue);
-  font-size: 32px;
+  font-size: 24px;
 }
 
 .mobile-menu-links a::after {

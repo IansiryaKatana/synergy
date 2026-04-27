@@ -95,6 +95,13 @@ function stripHtml(input?: string | null) {
   return (doc.body.textContent ?? '').replace(/\s+/g, ' ').trim()
 }
 
+function clampMetaDescription(input: string, max = 160) {
+  const cleaned = input.replace(/\s+/g, ' ').trim()
+  if (!cleaned) return ''
+  if (cleaned.length <= max) return cleaned
+  return `${cleaned.slice(0, max - 1).trimEnd()}...`
+}
+
 function SocialIcon({ name }: { name: string }) {
   const normalized = name.toLowerCase()
   if (normalized.includes('instagram') || normalized === 'ig') return <span aria-hidden="true">IG</span>
@@ -877,13 +884,18 @@ function App() {
         .map((item) => {
           const candidate = item.link_url || item.value
           const href = normalizeExternalLink(candidate)
+          const label = item.label || item.value || 'Social'
           return {
             id: item.id,
-            label: item.label || item.value || 'Social',
+            label,
             href,
           }
         })
-        .filter((item) => item.href.length > 0),
+        .filter((item) => item.href.length > 0)
+        .filter((item) => {
+          const normalizedLabel = item.label.toLowerCase()
+          return normalizedLabel.includes('linkedin') || normalizedLabel.includes('instagram')
+        }),
     [siteContent.media],
   )
   const mobileConnectSection = (
@@ -1049,6 +1061,127 @@ function App() {
   }
   const activeServiceCard =
     serviceCards.find((service) => service.href.toLowerCase() === activePathname) ?? null
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return
+
+    const defaultTitle = 'Synergy Project Management'
+    const defaultDescription =
+      'Synergy Project Management provides integrated project management, compliance, HR, and finance delivery services in Dubai and beyond.'
+    const ogImage = '/og-image.webp'
+    const currentPath = window.location.pathname || '/'
+    const currentUrl = `${window.location.origin}${currentPath}`
+
+    let pageTitle = defaultTitle
+    let pageDescription = defaultDescription
+
+    if (isServicesRoute) {
+      if (activeServiceCard) {
+        pageTitle = `${activeServiceCard.title} | Synergy Services`
+        pageDescription = clampMetaDescription(
+          `${activeServiceCard.description} Synergy Project Management delivers integrated execution, governance, and operational support.`,
+        )
+      } else {
+        pageTitle = 'Services | Synergy Project Management'
+        pageDescription = clampMetaDescription(
+          'Explore Synergy services across project management, compliance, HR, and finance with one coordinated delivery model.',
+        )
+      }
+    } else if (isProjectsRoute) {
+      pageTitle = 'Projects | Synergy Project Management'
+      pageDescription = clampMetaDescription(
+        'View Synergy project outcomes and strategic execution highlights across finance, compliance, HR, and delivery operations.',
+      )
+    } else if (isAboutRoute) {
+      pageTitle = 'About Us | Synergy Project Management'
+      pageDescription = clampMetaDescription(
+        'Learn about Synergy Project Management, our multidisciplinary team, and how we align departments into one growth-ready operating system.',
+      )
+    } else if (isCareersRoute) {
+      if (selectedCareerJob) {
+        const detailSource = selectedCareerJob.job_description_html
+          ? stripHtml(selectedCareerJob.job_description_html)
+          : selectedCareerJob.summary
+        pageTitle = `${selectedCareerJob.title} | Careers at Synergy`
+        pageDescription = clampMetaDescription(
+          `${detailSource || selectedCareerJob.title} Apply to join Synergy Project Management in ${selectedCareerJob.location_label || 'Dubai'}.`,
+        )
+      } else {
+        pageTitle = 'Careers | Synergy Project Management'
+        pageDescription = clampMetaDescription(
+          'Explore open roles at Synergy Project Management and join our mission across project management, compliance, HR, and finance.',
+        )
+      }
+    } else if (isContactRoute) {
+      pageTitle = 'Contact Us | Synergy Project Management'
+      pageDescription = clampMetaDescription(
+        'Contact Synergy Project Management to discuss your project, compliance, HR, or finance requirements.',
+      )
+    } else if (isHomeRoute) {
+      pageTitle = defaultTitle
+      pageDescription = defaultDescription
+    }
+
+    if (currentPath.startsWith('/backend')) {
+      pageTitle = 'Admin Backend | Synergy Project Management'
+      pageDescription = 'Secure backend access for Synergy Project Management administrators.'
+    }
+
+    const ensureMetaByName = (name: string, content: string) => {
+      let tag = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null
+      if (!tag) {
+        tag = document.createElement('meta')
+        tag.setAttribute('name', name)
+        document.head.appendChild(tag)
+      }
+      tag.setAttribute('content', content)
+    }
+
+    const ensureMetaByProperty = (property: string, content: string) => {
+      let tag = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null
+      if (!tag) {
+        tag = document.createElement('meta')
+        tag.setAttribute('property', property)
+        document.head.appendChild(tag)
+      }
+      tag.setAttribute('content', content)
+    }
+
+    const ensureCanonical = (href: string) => {
+      let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null
+      if (!link) {
+        link = document.createElement('link')
+        link.setAttribute('rel', 'canonical')
+        document.head.appendChild(link)
+      }
+      link.setAttribute('href', href)
+    }
+
+    document.title = pageTitle
+    ensureMetaByName('description', pageDescription)
+    ensureMetaByName('robots', currentPath.startsWith('/backend') ? 'noindex, nofollow' : 'index, follow')
+    ensureMetaByProperty('og:type', 'website')
+    ensureMetaByProperty('og:site_name', 'Synergy Project Management')
+    ensureMetaByProperty('og:title', pageTitle)
+    ensureMetaByProperty('og:description', pageDescription)
+    ensureMetaByProperty('og:url', currentUrl)
+    ensureMetaByProperty('og:image', ogImage)
+    ensureMetaByProperty('og:image:alt', 'Synergy Project Management')
+    ensureMetaByName('twitter:card', 'summary_large_image')
+    ensureMetaByName('twitter:title', pageTitle)
+    ensureMetaByName('twitter:description', pageDescription)
+    ensureMetaByName('twitter:image', ogImage)
+    ensureCanonical(currentUrl)
+  }, [
+    activeServiceCard,
+    isAboutRoute,
+    isCareersRoute,
+    isContactRoute,
+    isHomeRoute,
+    isProjectsRoute,
+    isServicesRoute,
+    selectedCareerJob,
+  ])
 
   useEffect(() => {
     if (!isServicesRoute || serviceCards.length === 0) return
