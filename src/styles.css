@@ -6249,8 +6249,8 @@ h1 {
 
 .careers-page-panel {
   width: 100%;
-  max-width: none;
-  margin: 0;
+  max-width: 1440px;
+  margin: 0 auto;
   background: #f8f7f3;
   border-radius: 18px;
   border: 1px solid rgba(9, 20, 35, 0.12);
@@ -6402,6 +6402,17 @@ h1 {
   gap: 1.2rem;
   padding: 1.45rem 0;
   border-bottom: 1px solid rgba(15, 31, 53, 0.2);
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.career-job-card:hover {
+  background: rgba(13, 27, 52, 0.04);
+}
+
+.career-job-card:focus-visible {
+  outline: 2px solid rgba(13, 27, 52, 0.48);
+  outline-offset: 4px;
 }
 
 .career-job-main h2 {
@@ -6498,7 +6509,7 @@ h1 {
   min-height: 35px;
   margin: 0;
   padding: 0.4rem 0.8rem;
-  border-radius: 999px;
+  border-radius: 10px;
   border: none;
   background: linear-gradient(180deg, rgba(17, 90, 166, 0.12), rgba(17, 90, 166, 0.06));
   font-size: 0.95rem;
@@ -6577,6 +6588,56 @@ h1 {
 .career-apply-grid textarea {
   grid-column: 1 / -1;
   resize: vertical;
+}
+
+.career-note-editor {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(15, 31, 53, 0.25);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.career-note-editor-toolbar {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid rgba(15, 31, 53, 0.14);
+  background: rgba(243, 246, 252, 0.95);
+}
+
+.career-note-editor-toolbar button {
+  border: 1px solid rgba(15, 31, 53, 0.22);
+  background: #fff;
+  color: #0b1a33;
+  border-radius: 8px;
+  min-width: 40px;
+  height: 32px;
+  padding: 0 0.55rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.career-note-editor-toolbar button.is-active {
+  background: #0d1732;
+  color: #fff;
+  border-color: #0d1732;
+}
+
+.career-note-editor-content {
+  min-height: 170px;
+  padding: 0.7rem 0.8rem;
+  color: #0b1a33;
+  outline: none;
+}
+
+.career-note-editor-content p {
+  margin: 0 0 0.65rem;
+}
+
+.career-note-editor-content p:last-child {
+  margin-bottom: 0;
 }
 
 .career-apply-input-full {

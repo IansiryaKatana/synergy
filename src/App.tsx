@@ -9,6 +9,8 @@ import {
   type ComponentType,
   type FormEvent,
 } from 'react'
+import { EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import PhoneInputLib from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import { AdminDashboard, type AdminPage } from './components/AdminDashboard'
@@ -83,6 +85,14 @@ function sanitizeRichHtml(input?: string | null) {
     }
   })
   return doc.body.innerHTML
+}
+
+function stripHtml(input?: string | null) {
+  if (!input) return ''
+  if (typeof window === 'undefined') return input.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(input, 'text/html')
+  return (doc.body.textContent ?? '').replace(/\s+/g, ' ').trim()
 }
 
 function SocialIcon({ name }: { name: string }) {
@@ -291,6 +301,27 @@ function App() {
   const careerCvInputRef = useRef<HTMLInputElement | null>(null)
   const lastScrollYRef = useRef(0)
   const careersLastScrollRef = useRef(0)
+  const jobNoteEditor = useEditor({
+    extensions: [StarterKit],
+    content: '<p></p>',
+    editorProps: {
+      attributes: {
+        class: 'career-note-editor-content',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      setJobApplicantNote(editor.getHTML())
+    },
+  })
+
+  useEffect(() => {
+    if (!jobNoteEditor) return
+    const currentHtml = jobNoteEditor.getHTML()
+    const nextHtml = jobApplicantNote || '<p></p>'
+    if (currentHtml !== nextHtml) {
+      jobNoteEditor.commands.setContent(nextHtml, { emitUpdate: false })
+    }
+  }, [jobNoteEditor, jobApplicantNote])
 
   const navigateWithTransition = useCallback(
     (target: string, options?: { replace?: boolean }) => {
@@ -933,6 +964,12 @@ function App() {
   const submitJobApplication = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!selectedCareerJob) return
+    const coverNoteHtml = sanitizeRichHtml(jobApplicantNote).trim()
+    const coverNoteText = stripHtml(coverNoteHtml)
+    if (!coverNoteText) {
+      setJobApplicationStatus('Please add a short note about why you are a great fit.')
+      return
+    }
     if (!jobApplicantCvFile) {
       setJobApplicationStatus('Please upload your CV before submitting.')
       return
@@ -956,7 +993,7 @@ function App() {
         full_name: jobApplicantName.trim(),
         email: jobApplicantEmail.trim(),
         phone: jobApplicantPhone.trim(),
-        cover_note: jobApplicantNote.trim(),
+        cover_note: coverNoteHtml,
         cv_url: jobApplicantCvUrl,
       })
       setJobApplicationStatus('Application sent successfully. Our team will contact you shortly.')
@@ -1946,13 +1983,35 @@ function App() {
                             </div>
                           ) : null}
                         </label>
-                        <textarea
-                          placeholder="Tell us why you're a great fit"
-                          rows={6}
-                          value={jobApplicantNote}
-                          onChange={(event) => setJobApplicantNote(event.target.value)}
-                          required
-                        />
+                        <div className="career-note-editor" aria-label="Tell us why you're a great fit">
+                          <div className="career-note-editor-toolbar">
+                            <button
+                              type="button"
+                              className={jobNoteEditor?.isActive('bold') ? 'is-active' : ''}
+                              onClick={() => jobNoteEditor?.chain().focus().toggleBold().run()}
+                              aria-label="Bold"
+                            >
+                              B
+                            </button>
+                            <button
+                              type="button"
+                              className={jobNoteEditor?.isActive('italic') ? 'is-active' : ''}
+                              onClick={() => jobNoteEditor?.chain().focus().toggleItalic().run()}
+                              aria-label="Italic"
+                            >
+                              I
+                            </button>
+                            <button
+                              type="button"
+                              className={jobNoteEditor?.isActive('bulletList') ? 'is-active' : ''}
+                              onClick={() => jobNoteEditor?.chain().focus().toggleBulletList().run()}
+                              aria-label="Bullet list"
+                            >
+                              List
+                            </button>
+                          </div>
+                          <EditorContent editor={jobNoteEditor} />
+                        </div>
                       </div>
                       {jobApplicationStatus ? <p className="career-apply-status">{jobApplicationStatus}</p> : null}
                       <button
@@ -1991,33 +2050,49 @@ function App() {
                   ))}
                 </div>
                 <section className="careers-list" aria-label="Open roles">
-                  {careersHeroJobs.map((job: JobPost, index: number) => (
-                    <article
-                      key={job.id}
-                      className="career-job-card entrance-seq"
-                      style={{ '--seq': index + 4 } as CSSProperties}
-                    >
-                      <div className="career-job-main">
-                        <h2>{job.title}</h2>
-                        <p>{job.summary}</p>
-                        <div className="career-job-meta">
-                          <span className="career-meta-pill career-meta-pill-location">
-                            {job.location_label || job.workplace_type || 'Remote'}
-                          </span>
-                          <span
-                            className={`career-meta-pill career-meta-pill-employment ${
-                              (job.employment_type || '').toLowerCase().includes('full-time') ? 'is-fulltime' : ''
-                            }`}
-                          >
-                            {job.employment_type || 'Full-time'}
-                          </span>
+                  {careersHeroJobs.map((job: JobPost, index: number) => {
+                    const jobHref = `/careers/${job.id}`
+                    const openJobDetails = () => {
+                      window.location.href = jobHref
+                    }
+                    return (
+                      <article
+                        key={job.id}
+                        className="career-job-card entrance-seq"
+                        style={{ '--seq': index + 4 } as CSSProperties}
+                        role="link"
+                        tabIndex={0}
+                        aria-label={`Open ${job.title} role details`}
+                        onClick={openJobDetails}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            openJobDetails()
+                          }
+                        }}
+                      >
+                        <div className="career-job-main">
+                          <h2>{job.title}</h2>
+                          <p>{job.summary}</p>
+                          <div className="career-job-meta">
+                            <span className="career-meta-pill career-meta-pill-location">
+                              {job.location_label || job.workplace_type || 'Remote'}
+                            </span>
+                            <span
+                              className={`career-meta-pill career-meta-pill-employment ${
+                                (job.employment_type || '').toLowerCase().includes('full-time') ? 'is-fulltime' : ''
+                              }`}
+                            >
+                              {job.employment_type || 'Full-time'}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <a className="career-apply-link" href={`/careers/${job.id}`}>
-                        Apply <UpRightArrowIcon />
-                      </a>
-                    </article>
-                  ))}
+                        <a className="career-apply-link" href={jobHref}>
+                          Apply <UpRightArrowIcon />
+                        </a>
+                      </article>
+                    )
+                  })}
                 </section>
               </>
             )}
