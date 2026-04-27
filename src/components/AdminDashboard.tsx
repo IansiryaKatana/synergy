@@ -50,13 +50,13 @@ const PAGE_TO_ENTITY: Partial<Record<AdminPage, EntityType>> = {
 }
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', href: '/admin', icon: LayoutGrid },
-  { id: 'branding', label: 'Branding', href: '/admin/branding', icon: Palette },
-  { id: 'team', label: 'Team', href: '/admin/team', icon: Users },
-  { id: 'services', label: 'Services', href: '/admin/services', icon: Briefcase },
-  { id: 'insights', label: 'Projects', href: '/admin/insights', icon: ChartNoAxesColumn },
-  { id: 'careers', label: 'Careers', href: '/admin/careers', icon: Briefcase },
-  { id: 'media', label: 'Media', href: '/admin/media', icon: GalleryVerticalEnd },
+  { id: 'dashboard', label: 'Dashboard', href: '/backend', icon: LayoutGrid },
+  { id: 'branding', label: 'Branding', href: '/backend/branding', icon: Palette },
+  { id: 'team', label: 'Team', href: '/backend/team', icon: Users },
+  { id: 'services', label: 'Services', href: '/backend/services', icon: Briefcase },
+  { id: 'insights', label: 'Projects', href: '/backend/insights', icon: ChartNoAxesColumn },
+  { id: 'careers', label: 'Careers', href: '/backend/careers', icon: Briefcase },
+  { id: 'media', label: 'Media', href: '/backend/media', icon: GalleryVerticalEnd },
 ]
 
 export function AdminDashboard(props: AdminProps) {
@@ -355,11 +355,11 @@ export function AdminDashboard(props: AdminProps) {
 
         {props.page === 'dashboard' ? (
           <section className="admin-dashboard-grid">
-            <article><p>Team</p><strong>{props.team.length}</strong><a href="/admin/team">Manage</a></article>
-            <article><p>Services</p><strong>{props.services.length}</strong><a href="/admin/services">Manage</a></article>
-            <article><p>Projects</p><strong>{props.insights.length}</strong><a href="/admin/insights">Manage</a></article>
-            <article><p>Careers</p><strong>{props.jobs.length}</strong><a href="/admin/careers">Manage</a></article>
-            <article><p>Media</p><strong>{props.media.length}</strong><a href="/admin/media">Manage</a></article>
+            <article><p>Team</p><strong>{props.team.length}</strong><a href="/backend/team">Manage</a></article>
+            <article><p>Services</p><strong>{props.services.length}</strong><a href="/backend/services">Manage</a></article>
+            <article><p>Projects</p><strong>{props.insights.length}</strong><a href="/backend/insights">Manage</a></article>
+            <article><p>Careers</p><strong>{props.jobs.length}</strong><a href="/backend/careers">Manage</a></article>
+            <article><p>Media</p><strong>{props.media.length}</strong><a href="/backend/media">Manage</a></article>
           </section>
         ) : null}
 
@@ -385,6 +385,10 @@ export function AdminDashboard(props: AdminProps) {
                 'footer_email',
                 'logo_url',
                 'favicon_url',
+                'homepage_hero_video_url',
+                'homepage_team_background_url',
+                'about_hero_background_url',
+                'contact_hero_background_url',
               ].map((field) => (
                 <label key={field}>
                   {field}
@@ -395,12 +399,17 @@ export function AdminDashboard(props: AdminProps) {
                         setBrandingForm((prev) => ({ ...prev, [field]: event.target.value }))
                       }
                     />
-                    {(field === 'logo_url' || field === 'favicon_url') ? (
+                    {(field === 'logo_url' ||
+                      field === 'favicon_url' ||
+                      field === 'homepage_hero_video_url' ||
+                      field === 'homepage_team_background_url' ||
+                      field === 'about_hero_background_url' ||
+                      field === 'contact_hero_background_url') ? (
                       <div className="admin-upload-actions-inline">
                         <label className="admin-inline-upload" title="Upload file">
                           <input
                             type="file"
-                            accept="image/*"
+                            accept={field === 'homepage_hero_video_url' ? 'video/*' : 'image/*'}
                             onChange={(event) => {
                               const file = event.target.files?.[0]
                               if (!file) return
@@ -767,12 +776,20 @@ function defaultForm(entity: EntityType): Record<string, unknown> {
   if (entity === 'services') return { ...base, tag: '', title: '', description: '', quote: '', image_url: '', detail_sections: '[]' }
   if (entity === 'insights') return { ...base, chip: '', date_label: '', title: '', alt_style: false, image_url: '' }
   if (entity === 'job_posts') return { ...base, title: '', department: '', summary: '', location_label: '', employment_type: '', workplace_type: '', apply_url: '' }
-  return { ...base, kind: 'asset', label: '', value: '', file_path: '', file_url: '' }
+  return { ...base, kind: 'asset', label: '', value: '', link_url: '', file_path: '', file_url: '' }
 }
 
 function normalizePayload(entity: EntityType, form: Record<string, unknown>) {
   const payload: Record<string, unknown> = { ...form }
   if (entity === 'media_items' && payload.file_url) payload.value = payload.file_url
+  if (entity === 'media_items') {
+    const kind = String(payload.kind ?? '').toLowerCase()
+    const value = String(payload.value ?? '')
+    const linkUrl = String(payload.link_url ?? '')
+    if (kind === 'social' && !linkUrl && /^https?:\/\//i.test(value)) {
+      payload.link_url = value
+    }
+  }
   if (entity === 'services') {
     payload.detail_sections = sanitizeDetailSections(payload.detail_sections)
   }
@@ -809,7 +826,7 @@ function renderFields(
     services: ['image_url', 'id', 'tag', 'title', 'description', 'quote', 'sort_order', 'is_active'],
     insights: ['image_url', 'id', 'chip', 'date_label', 'title', 'alt_style', 'sort_order', 'is_active'],
     job_posts: ['id', 'title', 'department', 'summary', 'location_label', 'employment_type', 'workplace_type', 'apply_url', 'sort_order', 'is_active'],
-    media_items: ['value', 'id', 'kind', 'label', 'file_path', 'file_url', 'sort_order', 'is_active'],
+    media_items: ['value', 'link_url', 'id', 'kind', 'label', 'file_path', 'file_url', 'sort_order', 'is_active'],
   }
   return (
     <div className="admin-form-grid">

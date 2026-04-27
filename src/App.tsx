@@ -50,6 +50,22 @@ function UpRightArrowIcon() {
   )
 }
 
+function normalizeExternalLink(raw: string) {
+  const trimmed = raw.trim()
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
+function SocialIcon({ name }: { name: string }) {
+  const normalized = name.toLowerCase()
+  if (normalized.includes('instagram') || normalized === 'ig') return <span aria-hidden="true">IG</span>
+  if (normalized.includes('linkedin') || normalized === 'in') return <span aria-hidden="true">in</span>
+  if (normalized.includes('facebook') || normalized === 'f' || normalized === 'fb') return <span aria-hidden="true">f</span>
+  if (normalized.includes('x') || normalized.includes('twitter')) return <span aria-hidden="true">X</span>
+  return <span aria-hidden="true">o</span>
+}
+
 function formatProjectTitle(title: string) {
   const firstLineRaw = title.includes('Hotel Apartment')
     ? title.replace('Hotel Apartment', '').trim()
@@ -125,6 +141,27 @@ function getShowcaseRatioClass(index: number, total: number) {
   return index % 2 === 0 ? 'ratio-3-4' : 'ratio-5-4'
 }
 
+const ADMIN_USERNAME = 'Hello@iankatana.com'
+const ADMIN_PASSWORD = 'B@zildog605'
+const ADMIN_AUTH_STORAGE_KEY = 'synergy_backend_auth'
+
+function NotFoundPage({ onGoHome }: { onGoHome: () => void }) {
+  return (
+    <main className="not-found-page">
+      <section className="not-found-card">
+        <p className="not-found-code">404</p>
+        <h1>This page does not exist.</h1>
+        <p>
+          The link may be outdated or the page has moved. Use the button below to return to the Synergy homepage.
+        </p>
+        <button type="button" className="not-found-home-btn" onClick={onGoHome}>
+          Back to homepage
+        </button>
+      </section>
+    </main>
+  )
+}
+
 function App() {
   const [dialogMode, setDialogMode] = useState<DialogMode>('none')
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -162,6 +199,11 @@ function App() {
     typeof window !== 'undefined' ? window.innerWidth : 1280,
   )
   const [activeRoute, setActiveRoute] = useState(resolveCurrentRoute)
+  const [isBackendAuthenticated, setIsBackendAuthenticated] = useState(false)
+  const [backendUsername, setBackendUsername] = useState('')
+  const [backendPassword, setBackendPassword] = useState('')
+  const [backendAuthError, setBackendAuthError] = useState('')
+  const [showBackendPassword, setShowBackendPassword] = useState(false)
   const [hasLoadedContent, setHasLoadedContent] = useState(false)
   const [siteContent, setSiteContent] = useState<SiteContent>(() => ({
     ...contentApi.fallback,
@@ -254,6 +296,18 @@ function App() {
   const aboutTeamMembers = siteContent.team.length > 0 ? siteContent.team : contentApi.fallback.team
   const aboutTeamVisibleCards = isMobileViewport ? 1 : viewportWidth >= 1440 ? 4 : viewportWidth >= 1024 ? 3 : 2
   const aboutTeamMaxSlideIndex = Math.max(0, aboutTeamMembers.length - aboutTeamVisibleCards)
+  const aboutTeamVisualDotCount = 4
+  const aboutTeamDotTargets = useMemo(
+    () =>
+      Array.from({ length: aboutTeamVisualDotCount }, (_, index) => {
+        if (aboutTeamMaxSlideIndex === 0) return 0
+        return Math.round((index / (aboutTeamVisualDotCount - 1)) * aboutTeamMaxSlideIndex)
+      }),
+    [aboutTeamMaxSlideIndex],
+  )
+  const aboutTeamActiveVisualDot = aboutTeamMaxSlideIndex === 0
+    ? 0
+    : Math.round((aboutTeamIndex / aboutTeamMaxSlideIndex) * (aboutTeamVisualDotCount - 1))
   const featuredInsights = useMemo(() => {
     const insightsWithImages = siteContent.insights.filter(
       (insight) => typeof insight.image_url === 'string' && insight.image_url.trim().length > 0,
@@ -261,6 +315,11 @@ function App() {
     if (insightsWithImages.length >= 3) return insightsWithImages.slice(0, 3)
     return siteContent.insights.slice(0, 3)
   }, [siteContent.insights])
+  const maxInsightsCards = isMobileViewport ? 1 : viewportWidth <= 1100 ? 2 : 3
+  const visibleInsights = useMemo(
+    () => featuredInsights.slice(0, maxInsightsCards),
+    [featuredInsights, maxInsightsCards],
+  )
   const canSlideServices = isMobileViewport || serviceCards.length > 3
 
   useEffect(() => {
@@ -355,10 +414,10 @@ function App() {
 
   useEffect(() => {
     setInsightsIndex((previous) => {
-      if (featuredInsights.length === 0) return 0
-      return Math.min(previous, featuredInsights.length - 1)
+      if (visibleInsights.length === 0) return 0
+      return Math.min(previous, visibleInsights.length - 1)
     })
-  }, [featuredInsights.length])
+  }, [visibleInsights.length])
 
   useEffect(() => {
     setAboutServicesIndex((previous) => {
@@ -444,6 +503,11 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    setIsBackendAuthenticated(window.sessionStorage.getItem(ADMIN_AUTH_STORAGE_KEY) === '1')
+  }, [])
+
+  useEffect(() => {
     const faviconUrl = siteContent.branding.favicon_url
     if (!faviconUrl) return
     let link = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null
@@ -470,6 +534,15 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const pathname = window.location.pathname.toLowerCase()
+    if (!pathname.startsWith('/admin')) return
+    window.history.replaceState({}, '', '/')
+    setActiveRoute(resolveCurrentRoute())
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [activeRoute])
+
+  useEffect(() => {
     if (!selectedMember) {
       setMemberEmailCopied(false)
       setMemberEmailLabel('')
@@ -488,10 +561,10 @@ function App() {
     setJobApplicantCvFile(null)
   }, [activeRoute])
 
-  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
+  const isBackendPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/backend')
   const adminPage: AdminPage = (() => {
     if (typeof window === 'undefined') return 'dashboard'
-    const part = window.location.pathname.replace(/^\/admin\/?/, '').split('/')[0]
+    const part = window.location.pathname.replace(/^\/backend\/?/, '').split('/')[0]
     if (!part) return 'dashboard'
     if (part === 'branding' || part === 'team' || part === 'services' || part === 'insights' || part === 'media' || part === 'careers') return part
     return 'dashboard'
@@ -502,7 +575,68 @@ function App() {
     homepageTeam.slice(3, 6),
   ]
 
-  if (isAdminPath) {
+  const submitBackendLogin = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (backendUsername === ADMIN_USERNAME && backendPassword === ADMIN_PASSWORD) {
+      setIsBackendAuthenticated(true)
+      setBackendAuthError('')
+      setBackendPassword('')
+      if (typeof window !== 'undefined') window.sessionStorage.setItem(ADMIN_AUTH_STORAGE_KEY, '1')
+      return
+    }
+    setBackendAuthError('Invalid credentials. Please use the provided admin username and password.')
+  }
+
+  if (isBackendPath) {
+    if (!isBackendAuthenticated) {
+      return (
+        <main className="backend-login-page">
+          <section className="backend-login-card">
+            <p className="backend-login-kicker">Backend access</p>
+            <h1>Admin login</h1>
+            <p>Sign in with your admin username and password to access the backend.</p>
+            <form className="backend-login-form" onSubmit={submitBackendLogin}>
+              <label>
+                Username
+                <input
+                  type="email"
+                  value={backendUsername}
+                  onChange={(event) => {
+                    setBackendUsername(event.target.value)
+                    if (backendAuthError) setBackendAuthError('')
+                  }}
+                  autoComplete="username"
+                  required
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type={showBackendPassword ? 'text' : 'password'}
+                  value={backendPassword}
+                  onChange={(event) => {
+                    setBackendPassword(event.target.value)
+                    if (backendAuthError) setBackendAuthError('')
+                  }}
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+              <label className="backend-login-toggle">
+                <input
+                  type="checkbox"
+                  checked={showBackendPassword}
+                  onChange={(event) => setShowBackendPassword(event.target.checked)}
+                />
+                Show password
+              </label>
+              {backendAuthError ? <p className="backend-login-error">{backendAuthError}</p> : null}
+              <button type="submit" className="backend-login-submit">Login</button>
+            </form>
+          </section>
+        </main>
+      )
+    }
     return (
       <AdminDashboard
         page={adminPage}
@@ -565,6 +699,7 @@ function App() {
   const navClass = (route: string) => (activeRoute === route ? 'active' : '')
   const normalizedActiveRoute = activeRoute.toLowerCase()
   const activePathname = normalizedActiveRoute.startsWith('/') ? normalizedActiveRoute : '/'
+  const isHomeRoute = activePathname === '/'
   const isServicesRoute = activePathname.startsWith('/services')
   const isProjectsRoute = activePathname === '/projects' || activePathname.startsWith('/projects/')
   const isAboutRoute = activePathname === '/about-us' || activePathname.startsWith('/about-us/')
@@ -596,6 +731,60 @@ function App() {
     [selectedCareerId, siteContent.jobs],
   )
   const isCareerDetailRoute = isCareersRoute && selectedCareerId.length > 0
+  const homepageHeroVideoSrc =
+    siteContent.branding.homepage_hero_video_url?.trim() ||
+    'https://www.pexels.com/download/video/10320249/'
+  const aboutHeroMediaStyle = siteContent.branding.about_hero_background_url
+    ? ({
+        backgroundImage:
+          `linear-gradient(to top, rgba(6, 14, 24, 0.56) 0%, rgba(6, 14, 24, 0.18) 55%, rgba(6, 14, 24, 0.04) 100%), ` +
+          `url("${siteContent.branding.about_hero_background_url}")`,
+      } as CSSProperties)
+    : undefined
+  const contactHeroMediaStyle = siteContent.branding.contact_hero_background_url
+    ? ({
+        backgroundImage:
+          `linear-gradient(to top, rgba(6, 14, 24, 0.56) 0%, rgba(6, 14, 24, 0.18) 55%, rgba(6, 14, 24, 0.04) 100%), ` +
+          `url("${siteContent.branding.contact_hero_background_url}")`,
+      } as CSSProperties)
+    : undefined
+  const teamSectionStyle = siteContent.branding.homepage_team_background_url
+    ? ({
+        backgroundImage:
+          `linear-gradient(to top, rgba(8, 39, 74, 0.84) 0%, rgba(8, 39, 74, 0.18) 58%), ` +
+          `radial-gradient(circle at 80% -10%, rgba(219, 238, 255, 0.16), transparent 44%), ` +
+          `var(--quote-noise-url), ` +
+          `url("${siteContent.branding.homepage_team_background_url}")`,
+      } as CSSProperties)
+    : undefined
+  const socialMediaItems = useMemo(
+    () =>
+      siteContent.media
+        .filter((item) => item.kind === 'social')
+        .map((item) => {
+          const candidate = item.link_url || item.value
+          const href = normalizeExternalLink(candidate)
+          return {
+            id: item.id,
+            label: item.label || item.value || 'Social',
+            href,
+          }
+        })
+        .filter((item) => item.href.length > 0),
+    [siteContent.media],
+  )
+  const mobileConnectSection = (
+    <div className="mobile-menu-social-bubble">
+      <p>Connect with us</p>
+      <div className="mobile-menu-social-icons">
+        {socialMediaItems.map((item) => (
+          <a key={`mobile-social-${item.id}`} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label}>
+            <SocialIcon name={item.label} />
+          </a>
+        ))}
+      </div>
+    </div>
+  )
   useEffect(() => {
     if (!isCareersRoute) {
       setShowCareersReturnHeader(false)
@@ -697,7 +886,10 @@ function App() {
           <div className="footer-top">
             <div className="footer-left">
               <p className="footer-brand">
-                <img src="/syngergy-logo.png" alt={siteContent.branding.company_name} className="footer-brand-logo" />
+                <picture>
+                  <source media="(max-width: 920px)" srcSet={siteContent.branding.favicon_url || '/SYNERGY logo.png'} />
+                  <img src="/syngergy-logo.png" alt={siteContent.branding.company_name} className="footer-brand-logo" />
+                </picture>
               </p>
               <p className="footer-address">Onyx Tower 1, The Greens{'\n'}Dubai, United Arab Emirates</p>
               <h2 className="footer-newsletter-heading">
@@ -707,7 +899,8 @@ function App() {
               <form className="footer-subscribe">
                 <input type="email" placeholder="Email" />
                 <button type="button">
-                  Subscribe
+                  <span className="footer-subscribe-label-desktop">Subscribe</span>
+                  <span className="footer-subscribe-label-mobile">Subscribe Now</span>
                   <span className="call-btn-icon" aria-hidden="true">
                     <UpRightArrowIcon />
                   </span>
@@ -734,9 +927,11 @@ function App() {
                 <div>
                   <p>Socials</p>
                   <div className="footer-socials">
-                    {siteContent.media
-                      .filter((item) => item.kind === 'social')
-                      .map((item) => <span key={item.id}>{item.value}</span>)}
+                    {socialMediaItems.map((item) => (
+                      <a key={`footer-social-${item.id}`} href={item.href} target="_blank" rel="noreferrer" aria-label={item.label}>
+                        <SocialIcon name={item.label} />
+                      </a>
+                    ))}
                   </div>
                 </div>
                 <div>
@@ -804,9 +999,20 @@ function App() {
             />
             <aside
               id="mobile-nav-drawer"
-              className={`mobile-menu-drawer ${isMobileMenuOpen ? 'open' : ''}`}
+              className={`mobile-menu-drawer services-mobile-menu-drawer ${isMobileMenuOpen ? 'open' : ''}`}
               aria-hidden={!isMobileMenuOpen}
             >
+              <div className="mobile-menu-header">
+                <p className="mobile-menu-title">Menu</p>
+                <button
+                  type="button"
+                  className="mobile-menu-close"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label="Close menu"
+                >
+                  ×
+                </button>
+              </div>
               <nav className="mobile-menu-links">
                 <a href="/" className={navClass('#home')} onClick={() => setIsMobileMenuOpen(false)}>
                   Home
@@ -831,6 +1037,7 @@ function App() {
                   Contact us
                 </a>
               </nav>
+              {mobileConnectSection}
               <button
                 className="mobile-menu-call"
                 onClick={() => {
@@ -863,8 +1070,8 @@ function App() {
                       <button
                         type="button"
                         className="section-nav-arrow"
-                        onClick={() => setInsightsIndex((index) => Math.min(featuredInsights.length - 1, index + 1))}
-                        disabled={insightsIndex >= featuredInsights.length - 1}
+                        onClick={() => setInsightsIndex((index) => Math.min(visibleInsights.length - 1, index + 1))}
+                        disabled={insightsIndex >= visibleInsights.length - 1}
                         aria-label="Next project card"
                       >
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -892,7 +1099,7 @@ function App() {
                     className="insights-cards-track"
                     style={isMobileViewport ? { transform: `translateX(-${insightsIndex * 100}%)` } : undefined}
                   >
-                  {featuredInsights.map((insight) => (
+                  {visibleInsights.map((insight) => (
                   <article
                     className={`insight-card ${insight.alt_style ? 'insight-card-alt' : ''} ${
                       insight.image_url ? 'has-image' : ''
@@ -931,7 +1138,7 @@ function App() {
         <section className="about-page-hero">
           <div className="about-page-hero-visual-frame" aria-hidden="true">
             <div className="noise-layer" />
-            <div className="about-page-hero-media" />
+            <div className="about-page-hero-media" style={aboutHeroMediaStyle} />
           </div>
           <header className="top-nav about-page-header">
             <div className="nav-bubble">
@@ -982,6 +1189,17 @@ function App() {
             className={`mobile-menu-drawer ${isMobileMenuOpen ? 'open' : ''}`}
             aria-hidden={!isMobileMenuOpen}
           >
+            <div className="mobile-menu-header">
+              <p className="mobile-menu-title">Menu</p>
+              <button
+                type="button"
+                className="mobile-menu-close"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                ×
+              </button>
+            </div>
             <nav className="mobile-menu-links">
               <a href="/" className={navClass('#home')} onClick={() => setIsMobileMenuOpen(false)}>
                 Home
@@ -1006,6 +1224,7 @@ function App() {
                 Contact us
               </a>
             </nav>
+            {mobileConnectSection}
             <button
               className="mobile-menu-call"
               onClick={() => {
@@ -1170,14 +1389,14 @@ function App() {
             </div>
           </div>
           <div className="about-team-dots" role="tablist" aria-label="Our team navigation">
-            {Array.from({ length: aboutTeamMaxSlideIndex + 1 }).map((_, index) => (
+            {aboutTeamDotTargets.map((targetIndex, index) => (
               <button
                 key={`about-team-dot-${index}`}
                 type="button"
-                className={`about-team-dot ${aboutTeamIndex === index ? 'active' : ''}`}
-                onClick={() => setAboutTeamIndex(index)}
+                className={`about-team-dot ${aboutTeamActiveVisualDot === index ? 'active' : ''}`}
+                onClick={() => setAboutTeamIndex(targetIndex)}
                 aria-label={`Show team slide ${index + 1}`}
-                aria-selected={aboutTeamIndex === index}
+                aria-selected={aboutTeamActiveVisualDot === index}
               />
             ))}
           </div>
@@ -1198,7 +1417,7 @@ function App() {
               patternRefreshInterval={2}
               patternAlpha={48}
             />
-            <div className="contact-page-hero-media" />
+            <div className="contact-page-hero-media" style={contactHeroMediaStyle} />
           </div>
           <header className="top-nav contact-page-header">
             <div className="nav-bubble">
@@ -1249,6 +1468,17 @@ function App() {
             className={`mobile-menu-drawer ${isMobileMenuOpen ? 'open' : ''}`}
             aria-hidden={!isMobileMenuOpen}
           >
+            <div className="mobile-menu-header">
+              <p className="mobile-menu-title">Menu</p>
+              <button
+                type="button"
+                className="mobile-menu-close"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                ×
+              </button>
+            </div>
             <nav className="mobile-menu-links">
               <a href="/" className={navClass('#home')} onClick={() => setIsMobileMenuOpen(false)}>
                 Home
@@ -1273,6 +1503,7 @@ function App() {
                 Contact us
               </a>
             </nav>
+            {mobileConnectSection}
             <button className="mobile-menu-call" onClick={navigateToContact}>
               Get in touch
             </button>
@@ -1390,7 +1621,16 @@ function App() {
           <header className="top-nav careers-page-header">
             <div className="nav-bubble">
               <a className="brand" href="/">
-                <img src="/syngergy-logo.png" alt={siteContent.branding.company_name} className="brand-wordmark-image" />
+                <img
+                  src="/SYNERGY logo.png"
+                  alt={siteContent.branding.company_name}
+                  className="brand-wordmark-image careers-brand-desktop"
+                />
+                <img
+                  src="/SYNERGY logo.png"
+                  alt={siteContent.branding.company_name}
+                  className="brand-wordmark-image careers-brand-mobile"
+                />
               </a>
               <nav className="menu">
                 <a href="/" className={navClass('#home')}>Home</a>
@@ -1427,6 +1667,17 @@ function App() {
             className={`mobile-menu-drawer ${isMobileMenuOpen ? 'open' : ''}`}
             aria-hidden={!isMobileMenuOpen}
           >
+            <div className="mobile-menu-header">
+              <p className="mobile-menu-title">Menu</p>
+              <button
+                type="button"
+                className="mobile-menu-close"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                ×
+              </button>
+            </div>
             <nav className="mobile-menu-links">
               <a href="/" className={navClass('#home')} onClick={() => setIsMobileMenuOpen(false)}>Home</a>
               <a href="/services/project-management" className={serviceNavClass()} onClick={() => setIsMobileMenuOpen(false)}>Services</a>
@@ -1435,6 +1686,7 @@ function App() {
               <a href="/careers" className={careersNavClass()} onClick={() => setIsMobileMenuOpen(false)}>Careers</a>
               <a href="/contact-us" className={contactNavClass()} onClick={() => setIsMobileMenuOpen(false)}>Contact us</a>
             </nav>
+            {mobileConnectSection}
             <button className="mobile-menu-call" onClick={navigateToContact}>Get in touch</button>
           </aside>
 
@@ -1708,6 +1960,17 @@ function App() {
               className={`mobile-menu-drawer ${isMobileMenuOpen ? 'open' : ''}`}
               aria-hidden={!isMobileMenuOpen}
             >
+              <div className="mobile-menu-header">
+                <p className="mobile-menu-title">Menu</p>
+                <button
+                  type="button"
+                  className="mobile-menu-close"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  aria-label="Close menu"
+                >
+                  ×
+                </button>
+              </div>
               <nav className="mobile-menu-links">
                 <a href="/" className={navClass('#home')} onClick={() => setIsMobileMenuOpen(false)}>
                   Home
@@ -1729,6 +1992,7 @@ function App() {
                   Contact us
                 </a>
               </nav>
+              {mobileConnectSection}
               <button
                 className="mobile-menu-call"
                 onClick={() => {
@@ -1742,6 +2006,12 @@ function App() {
         </main>
       </>
     )
+  }
+
+  const isUnknownServiceRoute = isServicesRoute && !activeServiceCard && hasLoadedContent
+  const isKnownStaticRoute = isHomeRoute || isProjectsRoute || isAboutRoute || isCareersRoute || isContactRoute
+  if (isUnknownServiceRoute || !isKnownStaticRoute) {
+    return <NotFoundPage onGoHome={() => navigateWithTransition('/', { replace: true })} />
   }
 
   return (
@@ -1789,6 +2059,17 @@ function App() {
         className={`mobile-menu-drawer ${isMobileMenuOpen ? 'open' : ''}`}
         aria-hidden={!isMobileMenuOpen}
       >
+        <div className="mobile-menu-header">
+          <p className="mobile-menu-title">Menu</p>
+          <button
+            type="button"
+            className="mobile-menu-close"
+            onClick={() => setIsMobileMenuOpen(false)}
+            aria-label="Close menu"
+          >
+            ×
+          </button>
+        </div>
         <nav className="mobile-menu-links">
           <a href="/" className={navClass('#home')} onClick={() => setIsMobileMenuOpen(false)}>
             Home
@@ -1813,6 +2094,7 @@ function App() {
             Contact us
           </a>
         </nav>
+        {mobileConnectSection}
         <button
           className="mobile-menu-call"
           onClick={() => {
@@ -1837,7 +2119,7 @@ function App() {
                 playsInline
                 preload="auto"
               >
-                <source src="https://www.pexels.com/download/video/10320249/" type="video/mp4" />
+                <source src={homepageHeroVideoSrc} type="video/mp4" />
               </video>
             </div>
             <header className="top-nav top-nav-hero" style={headerBlendVars}>
@@ -2070,7 +2352,7 @@ function App() {
       </section>
 
       <section ref={sixthSceneRef} className="sixth-section" style={sixthVars}>
-        <div className="sixth-inner">
+        <div className="sixth-inner" style={teamSectionStyle}>
           <header className="sixth-header">
             <p className="sixth-kicker">Synergy Project Management</p>
             <h2>{siteContent.branding.team_title}</h2>
@@ -2140,8 +2422,8 @@ function App() {
                 <button
                   type="button"
                   className="section-nav-arrow"
-                  onClick={() => setInsightsIndex((index) => Math.min(featuredInsights.length - 1, index + 1))}
-                  disabled={insightsIndex >= featuredInsights.length - 1}
+                  onClick={() => setInsightsIndex((index) => Math.min(visibleInsights.length - 1, index + 1))}
+                  disabled={insightsIndex >= visibleInsights.length - 1}
                   aria-label="Next project card"
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -2169,7 +2451,7 @@ function App() {
               className="insights-cards-track"
               style={isMobileViewport ? { transform: `translateX(-${insightsIndex * 100}%)` } : undefined}
             >
-            {featuredInsights.map((insight) => (
+            {visibleInsights.map((insight) => (
             <article
               className={`insight-card ${insight.alt_style ? 'insight-card-alt' : ''} ${
                 insight.image_url ? 'has-image' : ''
