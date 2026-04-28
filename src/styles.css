@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
 
 :root {
   --sand: #dfcebc;
@@ -22,6 +22,34 @@
 
 * {
   box-sizing: border-box;
+}
+
+:where(
+  body,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  a,
+  span,
+  li,
+  label,
+  button,
+  input,
+  textarea,
+  select,
+  strong,
+  small,
+  dt,
+  dd,
+  th,
+  td,
+  div
+) {
+  font-family: 'Geist', sans-serif !important;
 }
 
 body {
@@ -4495,7 +4523,7 @@ h1 {
   border: 1px solid rgba(17, 90, 166, 0.22);
   border-radius: 10px;
   padding: 0.58rem 0.64rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-family: 'Geist', sans-serif;
   font-size: 0.82rem;
   line-height: 1.35;
   resize: vertical;
@@ -7367,7 +7395,7 @@ h1 {
 }
 
 .career-job-description-html {
-  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+  font-family: 'Geist', sans-serif;
   color: rgba(10, 18, 31, 0.9);
   line-height: 1.52;
   letter-spacing: -0.012em;
