@@ -7154,16 +7154,9 @@ h1 {
   }
 
   .career-detail-content {
-    max-height: calc(100vh - var(--header-clearance) - 1.5rem);
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
     padding-right: 0.2rem;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .career-detail-content::-webkit-scrollbar {
-    width: 0;
-    height: 0;
   }
 
   .career-detail-form-column {
