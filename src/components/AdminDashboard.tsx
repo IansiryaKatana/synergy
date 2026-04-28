@@ -5,8 +5,12 @@ import {
   GalleryVerticalEnd,
   Globe,
   LayoutGrid,
+  Menu,
   Palette,
+  PanelLeftClose,
+  PanelLeftOpen,
   Users,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -42,6 +46,8 @@ type SidebarItem = {
   icon: LucideIcon
 }
 
+type BrandingTab = 'identity' | 'hero' | 'sections' | 'footer' | 'media'
+
 const PAGE_TO_ENTITY: Partial<Record<AdminPage, EntityType>> = {
   team: 'team_members',
   services: 'services',
@@ -61,7 +67,60 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { id: 'media', label: 'Media', href: '/backend/media', icon: GalleryVerticalEnd },
 ]
 
+const BRANDING_FIELD_GROUPS: Array<{ id: BrandingTab; label: string; fields: string[] }> = [
+  { id: 'identity', label: 'Identity', fields: ['id', 'company_name', 'logo_url', 'favicon_url'] },
+  { id: 'hero', label: 'Hero', fields: ['hero_eyebrow', 'hero_title', 'hero_subtitle', 'homepage_hero_video_url'] },
+  {
+    id: 'sections',
+    label: 'Sections',
+    fields: ['services_title', 'services_description', 'team_title', 'insights_title', 'insights_description'],
+  },
+  {
+    id: 'footer',
+    label: 'Footer',
+    fields: ['footer_address', 'footer_newsletter_title', 'footer_pitch', 'footer_wordmark', 'footer_email'],
+  },
+  {
+    id: 'media',
+    label: 'Backgrounds',
+    fields: ['homepage_team_background_url', 'about_hero_background_url', 'contact_hero_background_url'],
+  },
+]
+
+const BRANDING_MEDIA_FIELDS = new Set([
+  'logo_url',
+  'favicon_url',
+  'homepage_hero_video_url',
+  'homepage_team_background_url',
+  'about_hero_background_url',
+  'contact_hero_background_url',
+])
+
+const JOB_FIELD_OPTIONS: Record<string, string[]> = {
+  department: ['Finance', 'Compliance', 'Human Resources', 'Operations', 'Project Management'],
+  employment_type: ['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship'],
+  location_label: ['Dubai, UAE', 'Abu Dhabi, UAE', 'Remote - UAE', 'London, UK', 'Remote - UK'],
+  workplace_type: ['On-site', 'Hybrid', 'Remote'],
+}
+
+const RECORD_UPLOAD_FIELDS: Record<EntityType, string[]> = {
+  team_members: ['avatar_url'],
+  services: ['image_url'],
+  insights: ['image_url'],
+  job_posts: [],
+  media_items: ['value', 'file_url'],
+}
+
+const ENTITY_EDITOR_LABELS: Record<EntityType, string> = {
+  team_members: 'Team Member',
+  services: 'Service',
+  insights: 'Project',
+  job_posts: 'Job Post',
+  media_items: 'Media Item',
+}
+
 export function AdminDashboard(props: AdminProps) {
+  const mainScrollRef = useRef<HTMLElement | null>(null)
   const [entity, setEntity] = useState<EntityType>(PAGE_TO_ENTITY[props.page] ?? 'team_members')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
@@ -86,6 +145,7 @@ export function AdminDashboard(props: AdminProps) {
   const [brandingForm, setBrandingForm] = useState<Record<string, string | number | boolean>>(
     props.branding as unknown as Record<string, string | number | boolean>,
   )
+  const [brandingTab, setBrandingTab] = useState<BrandingTab>('identity')
   const [smtpForm, setSmtpForm] = useState<SmtpSettings>({
     smtp_host: '',
     smtp_port: 587,
@@ -95,6 +155,8 @@ export function AdminDashboard(props: AdminProps) {
     has_password: false,
   })
   const [smtpStatus, setSmtpStatus] = useState('')
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
 
   const rows = useMemo(() => {
     if (entity === 'team_members') return props.team
@@ -103,6 +165,19 @@ export function AdminDashboard(props: AdminProps) {
     if (entity === 'job_posts') return props.jobs
     return props.media
   }, [entity, props])
+  const currentPageLabel = useMemo(
+    () => SIDEBAR_ITEMS.find((item) => item.id === props.page)?.label ?? 'Dashboard',
+    [props.page],
+  )
+  const activeBrandingFields = useMemo(
+    () => BRANDING_FIELD_GROUPS.find((group) => group.id === brandingTab)?.fields ?? BRANDING_FIELD_GROUPS[0].fields,
+    [brandingTab],
+  )
+  const editorHeading = useMemo(() => {
+    const hasId = Boolean(String(formValues.id ?? '').trim())
+    const noun = ENTITY_EDITOR_LABELS[entity] ?? 'Record'
+    return hasId ? `Edit ${noun}` : `Create ${noun}`
+  }, [entity, formValues.id])
 
   const perPage = useMemo(() => {
     if (entity === 'media_items') return mediaView === 'grid' ? 20 : 12
@@ -120,6 +195,7 @@ export function AdminDashboard(props: AdminProps) {
     setSelectedIds([])
     setDetailRow(null)
     if (props.page === 'media') setMediaView('grid')
+    setIsMobileSidebarOpen(false)
   }, [props.page])
 
   useEffect(() => {
@@ -128,19 +204,24 @@ export function AdminDashboard(props: AdminProps) {
 
   useEffect(() => {
     const onScroll = () => {
-      const root = document.documentElement
-      const max = Math.max(1, root.scrollHeight - root.clientHeight)
-      const progress = Math.min(1, Math.max(0, root.scrollTop / max))
+      const container = mainScrollRef.current
+      if (!container) {
+        setScrollProgress(0)
+        return
+      }
+      const max = Math.max(1, container.scrollHeight - container.clientHeight)
+      const progress = Math.min(1, Math.max(0, container.scrollTop / max))
       setScrollProgress(progress)
     }
     onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
+    const container = mainScrollRef.current
+    container?.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
     return () => {
-      window.removeEventListener('scroll', onScroll)
+      container?.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
     }
-  }, [])
+  }, [props.page])
 
   const toggle = (id: string) =>
     setSelectedIds((current) =>
@@ -235,6 +316,9 @@ export function AdminDashboard(props: AdminProps) {
   const saveRow = async () => {
     setSaving(true)
     const payload = normalizePayload(entity, formValues)
+    if (!String(payload.id ?? '').trim()) {
+      payload.id = buildRecordId(entity, payload)
+    }
     const validation = validatePayload(entity, payload)
     if (validation) {
       setSaving(false)
@@ -295,6 +379,15 @@ export function AdminDashboard(props: AdminProps) {
     }
     void loadSmtp()
   }, [props.page])
+
+  useEffect(() => {
+    if (!isMobileSidebarOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isMobileSidebarOpen])
 
   const pickMedia = (url: string) => {
     setSelectedMediaUrl(url)
@@ -377,20 +470,64 @@ export function AdminDashboard(props: AdminProps) {
 
   return (
     <main className="admin-page">
-      <section className="admin-main">
+      <div
+        className={`admin-sidebar-overlay ${isMobileSidebarOpen ? 'open' : ''}`}
+        onClick={() => setIsMobileSidebarOpen(false)}
+      />
+      <div className="admin-shell">
+        <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileSidebarOpen ? 'open' : ''}`}>
+          <div className="admin-sidebar-head">
+            <div className="admin-sidebar-head-block" aria-hidden="true" />
+          </div>
+          <nav className="admin-sidebar-nav" aria-label="Admin navigation">
+            {SIDEBAR_ITEMS.map((item) => (
+              <a key={item.id} className={props.page === item.id ? 'active' : ''} href={item.href}>
+                <span className="admin-nav-icon" aria-hidden="true">
+                  <item.icon strokeWidth={1.15} />
+                </span>
+                <span className="admin-sidebar-label">{item.label}</span>
+              </a>
+            ))}
+          </nav>
+          <a className="admin-back-link" href="/" aria-label="Back to website">
+            <span className="admin-nav-icon" aria-hidden="true">
+              <Globe strokeWidth={1.2} />
+            </span>
+            <span className="admin-sidebar-label">Back to website</span>
+          </a>
+        </aside>
+
+        <section ref={mainScrollRef} className="admin-main">
         <header className="admin-head">
+          <div className="admin-mobile-topbar">
+            <a className="admin-mobile-brand" href="/backend">
+              <span className="admin-nav-icon" aria-hidden="true">
+                <LayoutGrid strokeWidth={1.2} />
+              </span>
+              <span>ManageOn</span>
+            </a>
+            <button
+              type="button"
+              className="admin-mobile-sidebar-btn"
+              aria-label={isMobileSidebarOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isMobileSidebarOpen}
+              onClick={() => setIsMobileSidebarOpen((current) => !current)}
+            >
+              {isMobileSidebarOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          </div>
           <div className="admin-head-top">
-            <nav className="admin-top-nav">
-              <span className="admin-top-nav-title">Synergy Dashboard</span>
-              {SIDEBAR_ITEMS.map((item) => (
-                <a key={item.id} className={props.page === item.id ? 'active' : ''} href={item.href}>
-                  <span className="admin-nav-icon" aria-hidden="true">
-                    <item.icon strokeWidth={1.15} />
-                  </span>
-                  <span>{item.label}</span>
-                </a>
-              ))}
-            </nav>
+            <div className="admin-head-title-row">
+              <button
+                type="button"
+                className="admin-head-collapse-btn"
+                aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                onClick={() => setIsSidebarCollapsed((current) => !current)}
+              >
+                {isSidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+              </button>
+              <p>{currentPageLabel}</p>
+            </div>
             <div className="admin-head-right">
               <a className="admin-web-link" href="/" aria-label="Back to website">
                 <Globe strokeWidth={1.45} />
@@ -415,33 +552,22 @@ export function AdminDashboard(props: AdminProps) {
 
         {props.page === 'branding' ? (
           <section className="admin-branding">
-            <h2>Branding Content</h2>
+            <div className="admin-tabs admin-branding-tabs">
+              {BRANDING_FIELD_GROUPS.map((group) => (
+                <button
+                  key={group.id}
+                  type="button"
+                  className={brandingTab === group.id ? 'active' : ''}
+                  onClick={() => setBrandingTab(group.id)}
+                >
+                  {group.label}
+                </button>
+              ))}
+            </div>
             <div className="admin-form-grid">
-              {[
-                'id',
-                'company_name',
-                'hero_eyebrow',
-                'hero_title',
-                'hero_subtitle',
-                'services_title',
-                'services_description',
-                'team_title',
-                'insights_title',
-                'insights_description',
-                'footer_address',
-                'footer_newsletter_title',
-                'footer_pitch',
-                'footer_wordmark',
-                'footer_email',
-                'logo_url',
-                'favicon_url',
-                'homepage_hero_video_url',
-                'homepage_team_background_url',
-                'about_hero_background_url',
-                'contact_hero_background_url',
-              ].map((field) => (
+              {activeBrandingFields.map((field) => (
                 <label key={field}>
-                  {field}
+                  {formatFieldLabel(field)}
                   <div className="admin-field-with-browse">
                     <input
                       value={String(brandingForm[field] ?? '')}
@@ -449,12 +575,7 @@ export function AdminDashboard(props: AdminProps) {
                         setBrandingForm((prev) => ({ ...prev, [field]: event.target.value }))
                       }
                     />
-                    {(field === 'logo_url' ||
-                      field === 'favicon_url' ||
-                      field === 'homepage_hero_video_url' ||
-                      field === 'homepage_team_background_url' ||
-                      field === 'about_hero_background_url' ||
-                      field === 'contact_hero_background_url') ? (
+                    {BRANDING_MEDIA_FIELDS.has(field) ? (
                       <div className="admin-upload-actions-inline">
                         <label className="admin-inline-upload" title="Upload file">
                           <input
@@ -505,10 +626,9 @@ export function AdminDashboard(props: AdminProps) {
 
         {props.page === 'smtp' ? (
           <section className="admin-branding">
-            <h2>SMTP Secrets (Rackspace)</h2>
             <div className="admin-form-grid">
               <label>
-                smtp_host
+                {formatFieldLabel('smtp_host')}
                 <input
                   value={String(smtpForm.smtp_host ?? '')}
                   onChange={(event) => setSmtpForm((prev) => ({ ...prev, smtp_host: event.target.value }))}
@@ -516,7 +636,7 @@ export function AdminDashboard(props: AdminProps) {
                 />
               </label>
               <label>
-                smtp_port
+                {formatFieldLabel('smtp_port')}
                 <input
                   type="number"
                   value={Number(smtpForm.smtp_port ?? 587)}
@@ -526,7 +646,7 @@ export function AdminDashboard(props: AdminProps) {
                 />
               </label>
               <label>
-                smtp_user
+                {formatFieldLabel('smtp_user')}
                 <input
                   value={String(smtpForm.smtp_user ?? '')}
                   onChange={(event) => setSmtpForm((prev) => ({ ...prev, smtp_user: event.target.value }))}
@@ -534,7 +654,7 @@ export function AdminDashboard(props: AdminProps) {
                 />
               </label>
               <label>
-                smtp_from
+                {formatFieldLabel('smtp_from')}
                 <input
                   value={String(smtpForm.smtp_from ?? '')}
                   onChange={(event) => setSmtpForm((prev) => ({ ...prev, smtp_from: event.target.value }))}
@@ -542,7 +662,7 @@ export function AdminDashboard(props: AdminProps) {
                 />
               </label>
               <label>
-                smtp_pass
+                {formatFieldLabel('smtp_pass')}
                 <input
                   type="password"
                   value={String(smtpForm.smtp_pass ?? '')}
@@ -662,12 +782,13 @@ export function AdminDashboard(props: AdminProps) {
             ) : null}
           </>
         ) : null}
-      </section>
+        </section>
+      </div>
 
       <div className={`admin-editor-overlay ${editorOpen ? 'open' : ''}`} onClick={() => setEditorOpen(false)} />
       <section className={`admin-editor-sheet ${editorOpen ? 'open' : ''}`}>
         <div className="admin-editor-head">
-          <h3>{formValues.id ? 'Edit record' : 'Create record'}</h3>
+          <h3>{editorHeading}</h3>
           <button onClick={() => setEditorOpen(false)}>Close</button>
         </div>
         <div className="admin-editor-body">
@@ -779,7 +900,7 @@ export function AdminDashboard(props: AdminProps) {
         ) : null}
         {targetUploadField ? (
           <p className="admin-upload-target">
-            Target field: <strong>{targetUploadField}</strong>
+            Target field: <strong>{formatFieldLabel(targetUploadField)}</strong>
           </p>
         ) : null}
         {mediaSheetTab === 'library' ? (
@@ -850,7 +971,7 @@ export function AdminDashboard(props: AdminProps) {
             <dl className="admin-record-details">
               {Object.entries(detailRow).map(([key, value]) => (
                 <div key={key}>
-                  <dt>{key}</dt>
+                  <dt>{formatFieldLabel(key)}</dt>
                   <dd>{String(value ?? '')}</dd>
                 </div>
               ))}
@@ -927,37 +1048,69 @@ function renderFields(
   openMedia: (field: string) => void,
 ) {
   const fields: Record<EntityType, string[]> = {
-    team_members: ['avatar_url', 'id', 'initials', 'name', 'role', 'bio', 'email', 'number', 'sort_order', 'is_active'],
-    services: ['image_url', 'id', 'tag', 'title', 'description', 'quote', 'sort_order', 'is_active'],
-    insights: ['image_url', 'id', 'chip', 'date_label', 'title', 'alt_style', 'sort_order', 'is_active'],
-    job_posts: ['id', 'title', 'department', 'summary', 'job_description_html', 'notification_email', 'location_label', 'employment_type', 'workplace_type', 'apply_url', 'sort_order', 'is_active'],
-    media_items: ['value', 'link_url', 'id', 'kind', 'label', 'file_path', 'file_url', 'sort_order', 'is_active'],
+    team_members: ['avatar_url', 'initials', 'name', 'role', 'bio', 'email', 'number', 'sort_order', 'is_active'],
+    services: ['image_url', 'tag', 'title', 'description', 'quote', 'sort_order', 'is_active'],
+    insights: ['image_url', 'chip', 'date_label', 'title', 'alt_style', 'sort_order', 'is_active'],
+    job_posts: ['title', 'department', 'summary', 'job_description_html', 'notification_email', 'location_label', 'employment_type', 'workplace_type', 'apply_url', 'sort_order', 'is_active'],
+    media_items: ['value', 'link_url', 'kind', 'label', 'file_path', 'file_url', 'sort_order', 'is_active'],
   }
   return (
     <div className="admin-form-grid">
       {fields[entity].map((field) => {
         const value = formValues[field]
         const isBool = typeof value === 'boolean'
-        const isUpload = field.endsWith('_url') || field === 'value'
+        const isUpload = RECORD_UPLOAD_FIELDS[entity].includes(field)
         const isJsonField = field === 'detail_sections'
         const isRichText = field === 'job_description_html'
+        const isJobSelect =
+          entity === 'job_posts' &&
+          (field === 'department' ||
+            field === 'employment_type' ||
+            field === 'location_label' ||
+            field === 'workplace_type')
+        const jobOptions = JOB_FIELD_OPTIONS[field] ?? []
+        const fieldLabel = formatFieldLabel(field)
+        if (isRichText) {
+          return (
+            <div key={field} className="admin-rich-field">
+              <span>{fieldLabel}</span>
+              <RichTextEditor
+                value={String(value ?? '')}
+                onChange={(nextValue) => setFormValues((prev) => ({ ...prev, [field]: nextValue }))}
+              />
+            </div>
+          )
+        }
         return (
           <label key={field}>
-            {field}
+            {fieldLabel}
             {isBool ? (
-              <input
-                type="checkbox"
-                checked={Boolean(value)}
-                onChange={(event) => setFormValues((prev) => ({ ...prev, [field]: event.target.checked }))}
-              />
+              <span className="admin-toggle-row">
+                <span className="admin-toggle-copy">{Boolean(value) ? 'Active and visible' : 'Inactive and hidden'}</span>
+                <span className="admin-toggle-switch">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(value)}
+                    onChange={(event) => setFormValues((prev) => ({ ...prev, [field]: event.target.checked }))}
+                  />
+                  <span className="admin-toggle-slider" aria-hidden="true" />
+                </span>
+              </span>
             ) : (
               <>
                 <div className="admin-field-with-browse">
-                  {isRichText ? (
-                    <RichTextEditor
+                  {isJobSelect ? (
+                    <select
                       value={String(value ?? '')}
-                      onChange={(nextValue) => setFormValues((prev) => ({ ...prev, [field]: nextValue }))}
-                    />
+                      onChange={(event) => setFormValues((prev) => ({ ...prev, [field]: event.target.value }))}
+                    >
+                      <option value="">Select {fieldLabel}</option>
+                      {jobOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   ) : isJsonField ? (
                     <textarea
                       value={String(value ?? '')}
@@ -1247,31 +1400,103 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (value: 
   useEffect(() => {
     const editor = editorRef.current
     if (!editor) return
+    if (document.activeElement === editor) return
     if (editor.innerHTML !== value) editor.innerHTML = value || ''
   }, [value])
 
   const run = (command: string, commandValue?: string) => {
-    document.execCommand(command, false, commandValue)
     const editor = editorRef.current
-    if (editor) onChange(editor.innerHTML)
+    if (!editor) return
+    editor.focus()
+    document.execCommand(command, false, commandValue)
+    onChange(editor.innerHTML)
+  }
+
+  const toolbarAction = (command: string, commandValue?: string) => ({
+    onMouseDown: (event: MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault()
+      run(command, commandValue)
+    },
+  })
+
+  const createLink = () => {
+    const href = window.prompt('Enter link URL')
+    if (!href) return
+    run('createLink', href.trim())
   }
 
   return (
     <div className="admin-rich-editor">
       <div className="admin-rich-toolbar">
-        <button type="button" className="admin-btn" onClick={() => run('bold')}>Bold</button>
-        <button type="button" className="admin-btn" onClick={() => run('italic')}>Italic</button>
-        <button type="button" className="admin-btn" onClick={() => run('underline')}>Underline</button>
-        <button type="button" className="admin-btn" onClick={() => run('insertUnorderedList')}>Bullet list</button>
-        <button type="button" className="admin-btn" onClick={() => run('insertOrderedList')}>Number list</button>
+        <button type="button" className="admin-btn" {...toolbarAction('bold')}>Bold</button>
+        <button type="button" className="admin-btn" {...toolbarAction('italic')}>Italic</button>
+        <button type="button" className="admin-btn" {...toolbarAction('underline')}>Underline</button>
+        <button type="button" className="admin-btn" {...toolbarAction('formatBlock', '<h2>')}>H2</button>
+        <button type="button" className="admin-btn" {...toolbarAction('formatBlock', '<h3>')}>H3</button>
+        <button type="button" className="admin-btn" {...toolbarAction('formatBlock', '<p>')}>P</button>
+        <button type="button" className="admin-btn" {...toolbarAction('insertUnorderedList')}>Bullets</button>
+        <button type="button" className="admin-btn" {...toolbarAction('insertOrderedList')}>Numbered</button>
+        <button type="button" className="admin-btn" onMouseDown={(event) => { event.preventDefault(); createLink() }}>Link</button>
+        <button type="button" className="admin-btn" {...toolbarAction('removeFormat')}>Clear</button>
       </div>
       <div
         ref={editorRef}
         className="admin-rich-surface"
         contentEditable
         suppressContentEditableWarning
-        onInput={(event) => onChange(event.currentTarget.innerHTML)}
+        onInput={() => undefined}
+        onBlur={(event) => onChange(event.currentTarget.innerHTML)}
       />
     </div>
   )
+}
+
+function buildRecordId(entity: EntityType, payload: Record<string, unknown>) {
+  const prefixMap: Record<EntityType, string> = {
+    team_members: 'team',
+    services: 'service',
+    insights: 'project',
+    job_posts: 'career',
+    media_items: 'media',
+  }
+  const source =
+    String(payload.title ?? '').trim() ||
+    String(payload.name ?? '').trim() ||
+    String(payload.label ?? '').trim() ||
+    String(payload.tag ?? '').trim() ||
+    prefixMap[entity]
+  const slug = source
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 40) || prefixMap[entity]
+  return `${slug}-${Date.now().toString(36)}`
+}
+
+function formatFieldLabel(field: string) {
+  const overrides: Record<string, string> = {
+    is_active: 'Record Status',
+    sort_order: 'Display Order',
+    job_description_html: 'Job Description',
+    apply_url: 'Application Link',
+    location_label: 'Location',
+    workplace_type: 'Workplace Type',
+    smtp_host: 'SMTP Host',
+    smtp_port: 'SMTP Port',
+    smtp_user: 'SMTP Username',
+    smtp_from: 'From Email',
+    smtp_pass: 'SMTP Password',
+    logo_url: 'Logo URL',
+    favicon_url: 'Favicon URL',
+    file_url: 'File URL',
+    link_url: 'Link URL',
+    avatar_url: 'Avatar URL',
+    image_url: 'Image URL',
+  }
+  if (overrides[field]) return overrides[field]
+  return field
+    .replace(/_html$/, '')
+    .replace(/_url$/, ' URL')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
